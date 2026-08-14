@@ -53,6 +53,14 @@ function PanelContent({
   // assertion is unsupported — surface it as such rather than badging it "Verified".
   const unsupported = (cafe.level === "A" || cafe.level === "B") && !cafe.evidence;
 
+  // C and D render on a pale gray cover (there's no "disclosure" colour to show — that's
+  // the point). White header text was designed for the saturated A/B greens and nearly
+  // disappears against that gray, so these two levels flip to dark ink instead of white.
+  const isLightCover = cafe.level === "C" || cafe.level === "D";
+  const headerInk       = isLightCover ? "#1c2b1a" : "#ffffff";
+  const headerInkMuted  = isLightCover ? "rgba(28,43,26,0.65)" : "rgba(255,255,255,0.7)";
+  const badgeBg         = isLightCover ? "rgba(28,43,26,0.08)" : "rgba(255,255,255,0.2)";
+
   return (
     <>
       {/* Coloured header */}
@@ -66,30 +74,32 @@ function PanelContent({
         {/* Close */}
         <motion.button
           onClick={onClose}
-          className="absolute top-4 right-4 p-1.5 rounded-full bg-black/20 hover:bg-black/35 transition-colors"
+          className="absolute top-4 right-4 p-1.5 rounded-full transition-colors"
+          style={{ background: isLightCover ? "rgba(28,43,26,0.12)" : "rgba(0,0,0,0.2)" }}
           whileHover={{ scale: 1.1, rotate: 90 }}
           whileTap={{ scale: 0.9 }}
           transition={SPRING}
         >
-          <X size={16} className="text-white" />
+          <X size={16} style={{ color: headerInk }} />
         </motion.button>
 
         {/* Level badge */}
         <div className="flex items-center gap-2 mb-2">
           <motion.span
             className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[16px] font-bold uppercase tracking-wider"
-            style={{ background: "rgba(255,255,255,0.2)", color: "#fff" }}
+            style={{ background: badgeBg, color: headerInk }}
             initial={{ opacity: 0, scale: 0.8 }}
             animate={{ opacity: 1, scale: 1 }}
             transition={{ delay: 0.1, ...SPRING }}
           >
-            <span className="w-1.5 h-1.5 rounded-full bg-white" />
+            <span className="w-1.5 h-1.5 rounded-full" style={{ background: headerInk }} />
             {unsupported ? "Under review" : `Level ${cafe.level} — ${level.shortLabel}`}
           </motion.span>
         </div>
 
         <motion.h2
-          className="text-white font-display text-xl font-bold leading-snug"
+          className="font-display text-xl font-bold leading-snug"
+          style={{ color: headerInk }}
           initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.12, duration: 0.4, ease: EASE }}
@@ -102,8 +112,8 @@ function PanelContent({
           animate={{ opacity: 1 }}
           transition={{ delay: 0.18, duration: 0.35, ease: EASE }}
         >
-          <MapPin size={12} className="text-white/70" />
-          <span className="text-white/70 text-[16px]">{cafe.suburb}, {cafe.city}</span>
+          <MapPin size={12} style={{ color: headerInkMuted }} />
+          <span className="text-[16px]" style={{ color: headerInkMuted }}>{cafe.suburb}, {cafe.city}</span>
         </motion.div>
       </motion.div>
 
