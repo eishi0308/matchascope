@@ -991,8 +991,14 @@ public class CafeService {
     private String coverColorForLevel(String level) {
         if (level == null) return "#9ca3af";
         return switch (level) {
+            // Level A is the thick, saturated green used across the app for a fully
+            // verified disclosure. Level B previously reused a near-identical dark
+            // green (#3a7a30), which made "Mentioned" cards indistinguishable from
+            // "Verified" ones at a glance — switched to the lighter green already
+            // used for Level B elsewhere (e.g. the "Japanese matcha mentioned" tone
+            // on the landing page) so the two levels read as visually distinct.
             case "A" -> "#2e6027";
-            case "B" -> "#3a7a30";
+            case "B" -> "#6eb35c";
             case "C" -> "#9ca3af";
             default  -> "#d1d5db";
         };
