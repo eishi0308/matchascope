@@ -34,7 +34,6 @@ function rowToCafe(row: Record<string, unknown>): Cafe {
       : typeof row.specialties === "string" && (row.specialties as string).length > 0
         ? (row.specialties as string).split(",").map((s) => s.trim())
         : [],
-    coverColor: row.cover_color as string,
   };
 }
 

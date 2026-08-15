@@ -53,20 +53,28 @@ function PanelContent({
   // assertion is unsupported — surface it as such rather than badging it "Verified".
   const unsupported = (cafe.level === "A" || cafe.level === "B") && !cafe.evidence;
 
-  // C and D render on a pale gray cover (there's no "disclosure" colour to show — that's
-  // the point). White header text was designed for the saturated A/B greens and nearly
-  // disappears against that gray, so these two levels flip to dark ink instead of white.
-  const isLightCover = cafe.level === "C" || cafe.level === "D";
-  const headerInk       = isLightCover ? "#1c2b1a" : "#ffffff";
-  const headerInkMuted  = isLightCover ? "rgba(28,43,26,0.65)" : "rgba(255,255,255,0.7)";
-  const badgeBg         = isLightCover ? "rgba(28,43,26,0.08)" : "rgba(255,255,255,0.2)";
+  // The header used to be cafe.coverColor with white text hardcoded regardless of how
+  // light that colour was — fine for A and B, unreadable for C and 2.5:1 / 1.5:1 for D.
+  // headerBg/headerText/headerPill are the per-level pair that keeps contrast safe (see
+  // levelConfig), so every white-on-header element below derives from headerText rather
+  // than assuming white — including the close button and location line, which had the
+  // same bug for the same reason (a fixed black/20 circle and white/70 text both nearly
+  // vanish on D's pale background).
+  const onLight = level.headerText !== "#ffffff";
+  const closeBg = onLight ? "rgba(0,0,0,0.08)" : "rgba(0,0,0,0.2)";
+  const closeBgHover = onLight ? "rgba(0,0,0,0.14)" : "rgba(0,0,0,0.35)";
+  // A literal rgba, not element opacity: the location line already animates its own
+  // opacity in (0 -> 1) on mount, and framer-motion drives that through the same CSS
+  // opacity property a plain style.opacity would use, so the two would fight and the
+  // static value would lose once the entrance animation finished.
+  const headerTextMuted = onLight ? `${level.headerText}b8` : "rgba(255,255,255,0.72)";
 
   return (
     <>
       {/* Coloured header */}
       <motion.div
         className="relative h-36 sm:h-40 flex flex-col justify-end p-5 flex-shrink-0"
-        style={{ background: `linear-gradient(160deg, ${cafe.coverColor}dd 0%, ${cafe.coverColor} 100%)` }}
+        style={{ background: `linear-gradient(160deg, ${level.headerBg}dd 0%, ${level.headerBg} 100%)` }}
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         transition={{ duration: 0.35, ease: EASE }}
@@ -75,31 +83,31 @@ function PanelContent({
         <motion.button
           onClick={onClose}
           className="absolute top-4 right-4 p-1.5 rounded-full transition-colors"
-          style={{ background: isLightCover ? "rgba(28,43,26,0.12)" : "rgba(0,0,0,0.2)" }}
-          whileHover={{ scale: 1.1, rotate: 90 }}
+          style={{ background: closeBg }}
+          whileHover={{ scale: 1.1, rotate: 90, backgroundColor: closeBgHover }}
           whileTap={{ scale: 0.9 }}
           transition={SPRING}
         >
-          <X size={16} style={{ color: headerInk }} />
+          <X size={16} style={{ color: level.headerText }} />
         </motion.button>
 
         {/* Level badge */}
         <div className="flex items-center gap-2 mb-2">
           <motion.span
             className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[16px] font-bold uppercase tracking-wider"
-            style={{ background: badgeBg, color: headerInk }}
+            style={{ background: level.headerPill, color: level.headerText }}
             initial={{ opacity: 0, scale: 0.8 }}
             animate={{ opacity: 1, scale: 1 }}
             transition={{ delay: 0.1, ...SPRING }}
           >
-            <span className="w-1.5 h-1.5 rounded-full" style={{ background: headerInk }} />
+            <span className="w-1.5 h-1.5 rounded-full" style={{ background: level.headerText }} />
             {unsupported ? "Under review" : `Level ${cafe.level} — ${level.shortLabel}`}
           </motion.span>
         </div>
 
         <motion.h2
           className="font-display text-xl font-bold leading-snug"
-          style={{ color: headerInk }}
+          style={{ color: level.headerText }}
           initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.12, duration: 0.4, ease: EASE }}
@@ -108,12 +116,13 @@ function PanelContent({
         </motion.h2>
         <motion.div
           className="flex items-center gap-1.5 mt-1"
+          style={{ color: headerTextMuted }}
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           transition={{ delay: 0.18, duration: 0.35, ease: EASE }}
         >
-          <MapPin size={12} style={{ color: headerInkMuted }} />
-          <span className="text-[16px]" style={{ color: headerInkMuted }}>{cafe.suburb}, {cafe.city}</span>
+          <MapPin size={12} color={headerTextMuted} />
+          <span className="text-[16px]">{cafe.suburb}, {cafe.city}</span>
         </motion.div>
       </motion.div>
 

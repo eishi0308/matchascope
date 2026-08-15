@@ -26,7 +26,6 @@ export interface Cafe {
   website?: string;
   priceRange: "$" | "$$" | "$$$";
   specialties: string[];
-  coverColor: string;
 }
 
 export const cafes: Cafe[] = [
@@ -53,7 +52,6 @@ export const cafes: Cafe[] = [
     website: "ippodo-tea.co.jp",
     priceRange: "$$$",
     specialties: ["Koicha", "Thin Matcha", "Uji Gyokuro"],
-    coverColor: "#2e6027",
   },
   {
     id: "syd-002",
@@ -76,7 +74,6 @@ export const cafes: Cafe[] = [
     instagram: "@matchamylkbar",
     priceRange: "$$",
     specialties: ["Matcha Mylk Latte", "Matcha Soft Serve", "Hojicha"],
-    coverColor: "#3a7a30",
   },
   {
     id: "syd-003",
@@ -100,7 +97,6 @@ export const cafes: Cafe[] = [
     website: "koidessertbar.com.au",
     priceRange: "$$$",
     specialties: ["Matcha Opera Cake", "Matcha Mille-Feuille", "Hojicha Panna Cotta"],
-    coverColor: "#4d9740",
   },
   {
     id: "syd-004",
@@ -124,7 +120,6 @@ export const cafes: Cafe[] = [
     website: "singleo.com.au",
     priceRange: "$$",
     specialties: ["Matcha Latte", "Iced Hojicha", "Cold Brew"],
-    coverColor: "#6eb35c",
   },
   {
     id: "syd-005",
@@ -147,7 +142,6 @@ export const cafes: Cafe[] = [
     instagram: "@circaespresso",
     priceRange: "$",
     specialties: ["Matcha Latte", "Matcha Croissant", "Flat White"],
-    coverColor: "#6eb35c",
   },
   {
     id: "syd-006",
@@ -166,7 +160,6 @@ export const cafes: Cafe[] = [
     website: "pabloandrusty.com",
     priceRange: "$$",
     specialties: ["Matcha Latte", "Cold Brew", "Espresso"],
-    coverColor: "#9ca3af",
   },
   {
     id: "syd-007",
@@ -185,7 +178,6 @@ export const cafes: Cafe[] = [
     website: "thegrounds.com.au",
     priceRange: "$$",
     specialties: ["Matcha Latte", "Smashed Avo", "Cold Drip"],
-    coverColor: "#9ca3af",
   },
   {
     id: "syd-008",
@@ -203,7 +195,6 @@ export const cafes: Cafe[] = [
     instagram: "@merrymooicecream",
     priceRange: "$",
     specialties: ["Matcha Soft Serve", "Mochi Ice Cream"],
-    coverColor: "#d1d5db",
   },
 
   // ── MELBOURNE ────────────────────────────────────────────────────────────
@@ -229,7 +220,6 @@ export const cafes: Cafe[] = [
     website: "matchaful.com.au",
     priceRange: "$$",
     specialties: ["Pure Matcha", "Matcha Tiramisu", "Ceremonial Cold Brew"],
-    coverColor: "#2e6027",
   },
   {
     id: "mel-002",
@@ -253,7 +243,6 @@ export const cafes: Cafe[] = [
     website: "shizuku.com.au",
     priceRange: "$$$",
     specialties: ["Matcha Roll Cake", "Warabi Mochi", "Dorayaki"],
-    coverColor: "#3a7a30",
   },
   {
     id: "mel-003",
@@ -277,7 +266,6 @@ export const cafes: Cafe[] = [
     website: "sensorylab.com.au",
     priceRange: "$$",
     specialties: ["Ceremonial Matcha", "Matcha Tonic", "Yuzu Hojicha"],
-    coverColor: "#4d9740",
   },
   {
     id: "mel-004",
@@ -301,7 +289,6 @@ export const cafes: Cafe[] = [
     website: "highergroundmelbourne.com.au",
     priceRange: "$$",
     specialties: ["Matcha Latte", "Cold Brew", "Banana Bread"],
-    coverColor: "#6eb35c",
   },
   {
     id: "mel-005",
@@ -325,7 +312,6 @@ export const cafes: Cafe[] = [
     website: "auntypegs.com.au",
     priceRange: "$$",
     specialties: ["Matcha Latte", "Iced Matcha", "Filter Coffee"],
-    coverColor: "#6eb35c",
   },
   {
     id: "mel-006",
@@ -344,7 +330,6 @@ export const cafes: Cafe[] = [
     website: "supernormal.net.au",
     priceRange: "$$$",
     specialties: ["Matcha Soft Serve", "Lobster Roll", "Steamed Rice"],
-    coverColor: "#9ca3af",
   },
   {
     id: "mel-007",
@@ -363,7 +348,6 @@ export const cafes: Cafe[] = [
     website: "brunetti.com.au",
     priceRange: "$$",
     specialties: ["Matcha Soft Serve", "Tiramisu", "Cannoli"],
-    coverColor: "#9ca3af",
   },
   {
     id: "mel-008",
@@ -382,10 +366,18 @@ export const cafes: Cafe[] = [
     website: "sevenseeds.com.au",
     priceRange: "$$",
     specialties: ["Matcha Latte", "Single Origin Espresso", "Pour Over"],
-    coverColor: "#d1d5db",
   },
 ];
 
+// headerBg/headerText/headerPill are the one place all four levels get shown as a large
+// colour wash with text on top (the cafe detail panel header, the "4 levels" cards). White
+// text stops being safe once the background lightens past B, so C and D are a hue switch
+// (green -> gray, since nothing was disclosed) rather than a paler green, and D switches to
+// dark text rather than forcing white on a background too light to carry it. Verified against
+// WCAG contrast: A 7.45:1, B 6.59:1, C 7.56:1, D 14.33:1 — all clear AAA (4.5:1 floor).
+// `color`/`bg` below are untouched: they drive the small swatch dots and chips elsewhere
+// (map level filter, badges), a different contrast problem against a white page background,
+// not against each other.
 export const levelConfig = {
   A: {
     label: "Verified Japanese Disclosure",
@@ -393,6 +385,9 @@ export const levelConfig = {
     color: "#2e6027",
     bg: "#e0f0d8",
     description: "Publicly states Japanese origin, prefecture, or direct sourcing.",
+    headerBg: "#2e6027",
+    headerText: "#ffffff",
+    headerPill: "rgba(255,255,255,0.2)",
   },
   B: {
     label: "Japanese Matcha Mentioned",
@@ -400,6 +395,9 @@ export const levelConfig = {
     color: "#3a7a30",
     bg: "#d4edcc",
     description: "References Japanese matcha but no sourcing specifics.",
+    headerBg: "#6eb35c",
+    headerText: "#14210f",
+    headerPill: "rgba(20,33,15,0.14)",
   },
   C: {
     label: "No Origin Disclosure",
@@ -407,6 +405,9 @@ export const levelConfig = {
     color: "#6b7280",
     bg: "#f3f4f6",
     description: "Serves matcha with no public origin information.",
+    headerBg: "#4b5563",
+    headerText: "#ffffff",
+    headerPill: "rgba(255,255,255,0.2)",
   },
   D: {
     label: "Insufficient Information",
@@ -414,5 +415,8 @@ export const levelConfig = {
     color: "#9ca3af",
     bg: "#fafafa",
     description: "Could not verify enough information to classify.",
+    headerBg: "#e5e7eb",
+    headerText: "#111827",
+    headerPill: "rgba(17,24,39,0.08)",
   },
 };

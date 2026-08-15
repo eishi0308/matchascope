@@ -20,7 +20,7 @@ import AuthModal from "@/components/AuthModal";
 import MatchaMark from "@/components/MatchaMark";
 import LandingOverture, { LandingProof } from "@/components/LandingOverture";
 import { fetchCafes, fetchStats } from "@/lib/api";
-import { Cafe } from "@/data/cafes";
+import { Cafe, levelConfig } from "@/data/cafes";
 
 type OvertureStats = {
   total: number;
@@ -93,11 +93,21 @@ const DISCLOSURE_ROWS = [
   { key: "named" as const,     label: "Named source, with a link", color: "#2e6027" },
 ];
 
+// Colour fields come from levelConfig's header* values — the same pair the cafe detail
+// panel uses — instead of a fourth hardcoded palette. This card set used to carry its own
+// hex values, independently wrong in its own way: B was white text on #4d9740 (3.6:1,
+// failing WCAG AA), and D's own accent-as-ink was #9ca3af on #eceef0 (2.18:1, also
+// failing) — nobody had checked either. `bg` is always the header wash; `accent` is only
+// the giant-letter/label/dot/description ink when the card renders on a light background,
+// so it has to be headerText (dark), not headerBg — reusing headerBg there would make the
+// letter the same colour as the card behind it, which is also why there's no `border`
+// field: it used to equal `bg` for the same reason and made B and D's outer border and
+// internal divider both invisible. The render derives those from a generic overlay instead.
 const LEVEL_CARDS = [
-  { level: "A", title: "Verified Japanese Disclosure", desc: "Names a specific Japanese region, farm or supplier — and links to proof.", accent: "#2e6027", bg: "#2e6027", border: "#2e6027", onDark: true },
-  { level: "B", title: "Japanese Matcha Mentioned",    desc: "Says the matcha is Japanese, but not which region, farm or supplier.",    accent: "#4d9740", bg: "#4d9740", border: "#4d9740", onDark: true },
-  { level: "C", title: "No Origin Disclosure",         desc: "Serves matcha, but says nothing about where it's from.",         accent: "#6b7280", bg: "#6b7280", border: "#6b7280", onDark: true },
-  { level: "D", title: "Insufficient Information",     desc: "Could not verify enough information across website, menu, or social media.",        accent: "#9ca3af", bg: "#eceef0", border: "#e5e7eb", onDark: false },
+  { level: "A", title: "Verified Japanese Disclosure", desc: "Names a specific Japanese region, farm or supplier — and links to proof.", accent: levelConfig.A.headerBg,   bg: levelConfig.A.headerBg, onDark: levelConfig.A.headerText === "#ffffff" },
+  { level: "B", title: "Japanese Matcha Mentioned",    desc: "Says the matcha is Japanese, but not which region, farm or supplier.",    accent: levelConfig.B.headerText, bg: levelConfig.B.headerBg, onDark: levelConfig.B.headerText === "#ffffff" },
+  { level: "C", title: "No Origin Disclosure",         desc: "Serves matcha, but says nothing about where it's from.",         accent: levelConfig.C.headerBg,   bg: levelConfig.C.headerBg, onDark: levelConfig.C.headerText === "#ffffff" },
+  { level: "D", title: "Insufficient Information",     desc: "Could not verify enough information across website, menu, or social media.",        accent: levelConfig.D.headerText, bg: levelConfig.D.headerBg, onDark: levelConfig.D.headerText === "#ffffff" },
 ];
 
 
@@ -1331,7 +1341,12 @@ export default function HomePage() {
                   className="relative rounded-3xl overflow-hidden h-full"
                   style={{
                     background: card.bg,
-                    border: `1px solid ${card.onDark ? "rgba(255,255,255,0.14)" : card.border}`,
+                    // card.border used to equal card.bg for B and D (both derived from the same
+                    // headerBg), which made this outer border and the divider below it identical
+                    // to the fill they sit on — invisible, same failure as the accent-as-ink bug.
+                    // A generic light-on-dark / dark-on-light overlay works for any bg lightness,
+                    // so nothing here needs a fifth per-level hex just for a hairline.
+                    border: `1px solid ${card.onDark ? "rgba(255,255,255,0.14)" : "rgba(0,0,0,0.12)"}`,
                     boxShadow: card.onDark ? "0 1px 3px rgba(0,0,0,0.12)" : "0 1px 3px rgba(0,0,0,0.04)",
                   }}
                   whileHover={{
@@ -1354,9 +1369,13 @@ export default function HomePage() {
                           {card.level}
                         </span>
                         <div>
+                          {/* onDark:false's 0.7 opacity was tuned against D's very pale bg (9.6:1 at
+                              0.85, still fine much lower). B is a darker bg than D, and at that same
+                              0.7 its label dropped to 3.74:1 against B's own background — under the
+                              4.5:1 floor for 16px text. 0.85 clears both (B 5.1:1, D 9.6:1). */}
                           <div
                             className="text-[16px] font-bold tracking-[0.2em] uppercase mb-1.5"
-                            style={{ color: card.onDark ? "rgba(255,255,255,0.78)" : card.accent, opacity: card.onDark ? 1 : 0.7 }}
+                            style={{ color: card.onDark ? "rgba(255,255,255,0.78)" : card.accent, opacity: card.onDark ? 1 : 0.85 }}
                           >
                             Level {card.level}
                           </div>
@@ -1365,20 +1384,28 @@ export default function HomePage() {
                           </h3>
                         </div>
                       </div>
-                      {/* Status dot */}
+                      {/* Status dot. Same 0.7 -> 0.85 reasoning as the label above: it's a non-text
+                          UI indicator (WCAG 1.4.11, 3:1 floor against its background), and B's dot
+                          was 2.47:1 at 0.5 opacity. 0.65 clears both (B 3.4:1, D 5.1:1). */}
                       <div
                         className="w-3 h-3 rounded-full flex-shrink-0 mt-2"
-                        style={{ background: card.onDark ? "#ffffff" : card.accent, opacity: card.onDark ? 0.55 : 0.5 }}
+                        style={{ background: card.onDark ? "#ffffff" : card.accent, opacity: card.onDark ? 0.55 : 0.65 }}
                       />
                     </div>
 
                     {/* Divider */}
-                    <div className="h-px mb-6" style={{ background: card.onDark ? "rgba(255,255,255,0.18)" : card.border }} />
+                    {/* Same card.border bug as the outer border above: this was invisible on
+                        B and D because it matched their own background exactly. */}
+                    <div className="h-px mb-6" style={{ background: card.onDark ? "rgba(255,255,255,0.18)" : "rgba(0,0,0,0.12)" }} />
 
-                    {/* Description */}
+                    {/* Description. This was a hardcoded #6b7280 for every onDark:false card,
+                        which was never checked against either background it actually renders
+                        on: 1.9:1 on B's green, 3.9:1 on D's pale gray — both under the 4.5:1
+                        floor for body text, B badly so. card.accent (headerText) at 0.8 opacity
+                        clears both: B 4.62:1, D 8.27:1. */}
                     <p
                       className="leading-relaxed"
-                      style={{ fontSize: "clamp(1rem, 1.8vw, 1.1rem)", color: card.onDark ? "rgba(255,255,255,0.82)" : "#6b7280" }}
+                      style={{ fontSize: "clamp(1rem, 1.8vw, 1.1rem)", color: card.onDark ? "rgba(255,255,255,0.82)" : card.accent, opacity: card.onDark ? undefined : 0.8 }}
                     >
                       {card.desc}
                     </p>
