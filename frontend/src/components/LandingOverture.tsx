@@ -11,7 +11,6 @@
  */
 
 import { Fragment, useEffect, useMemo, useRef, useState } from "react";
-import { useRouter } from "next/navigation";
 import Link from "next/link";
 import {
   motion,
@@ -22,9 +21,8 @@ import {
   useMotionValue,
   useReducedMotion,
   animate,
-  AnimatePresence,
 } from "framer-motion";
-import { Search, ArrowRight, ArrowDown, MapPin, Quote, ShieldCheck, ExternalLink } from "lucide-react";
+import { ArrowRight, ArrowDown, MapPin, Quote, ShieldCheck, ExternalLink } from "lucide-react";
 import { Cafe } from "@/data/cafes";
 
 const EASE_EXPO = [0.16, 1, 0.3, 1] as const;
@@ -192,10 +190,8 @@ function Reveal({
 /* ───────────────────────────────────────────────────────────────── act one ── */
 
 function Hero({ stats }: { stats: Props["stats"] }) {
-  const router  = useRouter();
   const reduce  = useReducedMotion();
   const ref     = useRef<HTMLElement>(null);
-  const [query, setQuery] = useState("");
 
   const { scrollYProgress } = useScroll({ target: ref, offset: ["start start", "end start"] });
   const headlineY = useTransform(scrollYProgress, [0, 1], ["0%", reduce ? "0%" : "38%"]);
@@ -210,25 +206,6 @@ function Hero({ stats }: { stats: Props["stats"] }) {
   // Read, minus everyone who said something — A names a source, B says only
   // "Japanese matcha". What is left published nothing about origin at all.
   const silent   = Math.max(0, read - verified - (stats?.byLevel?.B ?? 14));
-
-  const go = (q: string) => router.push(q.trim() ? `/map?q=${encodeURIComponent(q.trim())}` : "/map");
-
-  // The chip row is gone; the suggestions it carried now cycle through the
-  // placeholder, so discovery survives without a second row of controls.
-  // Places only. "ceremonial" used to sit here and was wrong twice: it is an
-  // unregulated marketing grade, which is the exact vocabulary the evidence
-  // section refuses, and it is the one hint the label above does not promise.
-  // Uji is not a suburb either, but it is an origin — the thing the headline
-  // is about — so it teaches the same category the other three do.
-  const hints = ["Surry Hills", "Uji", "Melbourne", "Fitzroy"];
-  const [hint, setHint] = useState(0);
-  const [focused, setFocused] = useState(false);
-
-  useEffect(() => {
-    if (reduce || focused || query) return;
-    const t = setInterval(() => setHint((h) => (h + 1) % hints.length), 2600);
-    return () => clearInterval(t);
-  }, [reduce, focused, query, hints.length]);
 
   return (
     <section
@@ -311,96 +288,36 @@ function Hero({ stats }: { stats: Props["stats"] }) {
           Dated and linked.
         </motion.p>
 
-        {/* Search is the CTA — and the largest object on the screen */}
-        <motion.form
-          onSubmit={(e) => { e.preventDefault(); go(query); }}
-          className="mt-6 sm:mt-10 max-w-2xl mx-auto"
+        {/* The search field is gone — this is now a single, unambiguous CTA rather than a
+            form with a button attached to it. Nothing else on the first screen offers a
+            second way to leave the page, so the button can afford to be the visually
+            heaviest object here instead of splitting weight with an input beside it. */}
+        <motion.div
+          className="mt-8 sm:mt-11 flex justify-center"
           initial={reduce ? false : { opacity: 0, y: 18 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.7, ease: EASE_EXPO, delay: 0.88 }}
         >
-          <motion.div
-            className="relative flex flex-col sm:flex-row sm:items-center gap-2.5 p-2.5 rounded-[26px] bg-white"
-            animate={{
-              boxShadow: focused
-                ? "0 24px 70px rgba(15,32,16,0.18), 0 0 0 4px rgba(110,179,92,0.22)"
-                : "0 16px 50px rgba(15,32,16,0.10), 0 0 0 1.5px rgba(0,0,0,0.06)",
-              scale: focused && !reduce ? 1.015 : 1,
-            }}
-            transition={{ duration: 0.28, ease: EASE_OUT }}
-          >
-            <div className="relative flex-1 flex items-center">
-              <Search
-                size={24}
-                className="absolute left-4 text-gray-400 pointer-events-none"
-                strokeWidth={2.2}
-              />
-              <label htmlFor="overture-search" className="sr-only">
-                Search cafes and suburbs
-              </label>
-              <input
-                id="overture-search"
-                type="search"
-                enterKeyHint="search"
-                autoComplete="off"
-                value={query}
-                onChange={(e) => setQuery(e.target.value)}
-                onFocus={() => setFocused(true)}
-                onBlur={() => setFocused(false)}
-                className="w-full bg-transparent pl-14 pr-4 py-4 sm:py-5 text-[20px] sm:text-[22px] text-gray-900 outline-none rounded-[20px] [&::-webkit-search-cancel-button]:appearance-none"
-              />
-              {/* Animated placeholder. Both halves centre inside boxes of the
-                  same height so the rotating word shares a baseline with the
-                  static one — an absolutely positioned child cannot sit on the
-                  flex baseline of its siblings. */}
-              {!query && (
-                <div className="absolute left-14 right-4 pointer-events-none flex items-center gap-1.5 text-[20px] sm:text-[22px] text-gray-400 leading-none overflow-hidden">
-                  <span className="flex-shrink-0 leading-none">Search</span>
-                  <span className="relative flex-1 h-[1.3em] overflow-hidden">
-                    <AnimatePresence mode="wait" initial={false}>
-                      <motion.span
-                        key={reduce ? "static" : hint}
-                        className="absolute inset-0 flex items-center whitespace-nowrap text-gray-500 leading-none"
-                        initial={reduce ? false : { y: "0.9em", opacity: 0 }}
-                        animate={{ y: 0, opacity: 1 }}
-                        exit={reduce ? undefined : { y: "-0.9em", opacity: 0 }}
-                        transition={{ duration: 0.42, ease: EASE_EXPO }}
-                      >
-                        {reduce ? `${total.toLocaleString()} cafes and suburbs` : `“${hints[hint]}”`}
-                      </motion.span>
-                    </AnimatePresence>
-                  </span>
-                </div>
-              )}
-            </div>
-
-            <Magnetic strength={0.22} className="block w-full sm:w-auto">
-              <button
-                type="submit"
-                className="group/cta w-full inline-flex items-center justify-center gap-2 px-7 sm:px-9 py-4 sm:py-5 rounded-[20px] text-[18px] sm:text-[19px] font-semibold text-white whitespace-nowrap focus-visible:ring-4 focus-visible:ring-matcha-300 outline-none"
-                style={{
-                  background: "linear-gradient(135deg,#2e6027,#4d9740)",
-                  boxShadow: "0 8px 24px rgba(46,96,39,0.34)",
-                }}
+          <Magnetic strength={0.22}>
+            <Link
+              href="/map"
+              className="group/cta inline-flex items-center justify-center gap-2.5 px-9 sm:px-12 py-5 sm:py-6 rounded-full text-[19px] sm:text-[21px] font-semibold text-white whitespace-nowrap focus-visible:ring-4 focus-visible:ring-matcha-300 outline-none"
+              style={{
+                background: "linear-gradient(135deg,#2e6027,#4d9740)",
+                boxShadow: "0 14px 36px rgba(46,96,39,0.38), 0 3px 10px rgba(46,96,39,0.22)",
+              }}
+            >
+              Explore the map
+              <motion.span
+                className="inline-flex"
+                animate={reduce ? {} : { x: [0, 4, 0] }}
+                transition={{ duration: 1.8, repeat: Infinity, ease: "easeInOut" }}
               >
-                Explore the map
-                <motion.span
-                  className="inline-flex"
-                  animate={reduce ? {} : { x: [0, 3, 0] }}
-                  transition={{ duration: 1.8, repeat: Infinity, ease: "easeInOut" }}
-                >
-                  <ArrowRight size={19} />
-                </motion.span>
-              </button>
-            </Magnetic>
-          </motion.div>
-
-          {/* The helper line that sat here — "Search by cafe, suburb or city — or open the
-              map and browse all 1,147" — said nothing the reader could not already see. The
-              placeholder demonstrates the query, the button names the destination, and the
-              count is in the paragraph above and the figures below. Three restatements of
-              one affordance inside 100px reads as an interface apologising for itself. */}
-        </motion.form>
+                <ArrowRight size={21} />
+              </motion.span>
+            </Link>
+          </Magnetic>
+        </motion.div>
 
         {/* Live proof. This briefly ran as four figures of equal weight — found, read, said
             nothing, named a source — but only two of those are findings. "1,147" and "588"
