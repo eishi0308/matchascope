@@ -559,43 +559,57 @@ function DisclosureStat({ stats }: { stats: Props["stats"] }) {
           />
         </svg>
 
-        <motion.div style={{ scale }} className="text-center px-5">
-          <div className="text-[16px] uppercase tracking-[0.2em] text-matcha-300 font-semibold mb-5 sm:mb-7">
-            The finding
-          </div>
-          {/* Small and muted, next to large and lit — the same scale-contrast pairing as the
-              hero funnel, but this is the one place on the page the two numbers stand alone
-              with nothing else competing for the screen. 1,147 sits low enough not to fight
-              86 for the eye; 86 keeps most of the size budget the old percentage had. */}
-          <div className="flex items-baseline justify-center gap-5 sm:gap-10 flex-wrap">
-            <div>
-              <div className="font-display font-bold leading-none text-white/45"
-                   style={{ fontSize: "clamp(2.25rem, 9vw, 4.75rem)" }}>
-                <Counter value={total} immediate />
-              </div>
-              <div className="text-[15px] sm:text-[17px] text-white/45 mt-2">cafes found</div>
-            </div>
-            <div>
-              <div className="font-display font-bold leading-none text-matcha-400"
-                   style={{ fontSize: "clamp(4.5rem, 19vw, 10rem)" }}>
-                <Counter value={verified} />
-              </div>
-              <div className="text-[16px] sm:text-[19px] text-white font-semibold mt-2">say where it&rsquo;s from</div>
-            </div>
-          </div>
-        </motion.div>
+        <div className="text-[16px] uppercase tracking-[0.2em] text-matcha-300 font-semibold mb-5 sm:mb-7">
+          The finding
+        </div>
 
-        <motion.p
-          style={{ y: copyY, opacity: copyOp }}
-          className="mt-7 max-w-lg text-center text-[16px] leading-relaxed text-white/60 px-6"
-        >
-          {/* This used to be "Only 86 of them name a region, farm or supplier" — restating
-              the 86 that is now the headline number itself. What the reader needs here
-              instead is the same honest denominator note the hero and the breakdown card
-              both carry: 559 of the 1,147 were never read at all, so this isn't 86 out of
-              1,147 checked, it's 86 out of the 588 that could be. */}
-          Of the {read.toLocaleString()} cafés whose page could actually be read.
-        </motion.p>
+        {/* Bordered card rather than the numbers floating loose on the section background —
+            a distinct surface the reader's eye lands on first, with a divider separating the
+            finding itself from the one line of method underneath it, instead of a bare gap
+            doing that job by whitespace alone. The eyebrow stays outside it, above: every
+            other section on this page centres its label over the content rather than
+            tucking it into a corner, and this one following suit is what makes it read as
+            the same kind of section as the rest, not a one-off card style. */}
+        <div className="relative mx-5 max-w-2xl sm:mx-auto rounded-[28px]"
+             style={{ background: "rgba(255,255,255,0.035)", border: "1px solid rgba(255,255,255,0.09)" }}>
+          <div className="px-6 py-8 sm:px-16 sm:py-12">
+            <motion.div style={{ scale }} className="text-center">
+              {/* Small and muted, next to large and lit — the same scale-contrast pairing as
+                  the hero funnel. 1,147 sits low enough not to fight 86 for the eye; 86 keeps
+                  most of the size budget the old percentage had. */}
+              <div className="flex items-baseline justify-center gap-5 sm:gap-10 flex-wrap">
+                <div>
+                  <div className="font-display font-bold leading-none text-white/45"
+                       style={{ fontSize: "clamp(2.25rem, 9vw, 4.75rem)" }}>
+                    <Counter value={total} immediate />
+                  </div>
+                  <div className="text-[15px] sm:text-[17px] text-white/45 mt-2">cafes found</div>
+                </div>
+                <div>
+                  <div className="font-display font-bold leading-none text-matcha-400"
+                       style={{ fontSize: "clamp(4.5rem, 19vw, 10rem)" }}>
+                    <Counter value={verified} />
+                  </div>
+                  <div className="text-[16px] sm:text-[19px] text-white font-semibold mt-2">say where it&rsquo;s from</div>
+                </div>
+              </div>
+            </motion.div>
+
+            <div className="h-px mt-7 sm:mt-9" style={{ background: "rgba(255,255,255,0.12)" }} />
+
+            <motion.p
+              style={{ y: copyY, opacity: copyOp }}
+              className="mt-5 sm:mt-6 text-center text-[16px] leading-relaxed text-white/60"
+            >
+              {/* This used to be "Only 86 of them name a region, farm or supplier" — restating
+                  the 86 that is now the headline number itself. What the reader needs here
+                  instead is the same honest denominator note the hero and the breakdown card
+                  both carry: 559 of the 1,147 were never read at all, so this isn't 86 out of
+                  1,147 checked, it's 86 out of the 588 that could be. */}
+              Of the {read.toLocaleString()} cafés whose page could actually be read.
+            </motion.p>
+          </div>
+        </div>
       </div>
     </section>
   );
