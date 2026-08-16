@@ -366,14 +366,23 @@ function Hero({ stats }: { stats: Props["stats"] }) {
           transition={{ duration: 0.8, delay: 1.1 }}
         >
           {[
-            { n: total,    label: "cafes found",  muted: true },
-            { n: read,     label: "pages read",   muted: true },
-            { n: silent,   label: "say nothing",  muted: false },
+            { n: total,    label: "cafes found",  variant: "muted"  as const },
+            { n: read,     label: "pages read",   variant: "muted"  as const },
+            { n: silent,   label: "say nothing",  variant: "dark"   as const },
             // "say where" rather than "name a source": it is the same fact, it fits the
             // narrow mobile column on one line where the longer phrase wrapped, and it
             // closes the headline's sentence — most cafes won't tell you where, and this
             // is exactly how many do.
-            { n: verified, label: "say where",    muted: false },
+            //
+            // This is the only accent-coloured number in the row. Every other grade of
+            // "did they say anything" reads in gray or near-black across this whole site —
+            // A-level badges, the marquee, the finding section's own "86" further down the
+            // page — matcha green means exactly one thing everywhere it appears: disclosed.
+            // Leaving this row entirely grayscale broke that convention for no reason and
+            // made the row read as a generic stat bar; 488 stays neutral rather than getting
+            // a warning color of its own, because "silent" is not a verdict this site passes,
+            // just a count — the green is reserved for the one state the brand actually marks.
+            { n: verified, label: "say where",    variant: "accent" as const },
           ].map((s, i) => (
             // Staggered left to right at 90ms so the four land in funnel order rather than
             // together — the drop from one figure to the next is the point.
@@ -384,28 +393,28 @@ function Hero({ stats }: { stats: Props["stats"] }) {
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.5, ease: EASE_OUT, delay: 1.1 + i * 0.09 }}
             >
-              {/* Muted pair stays a fixed, smaller scale — they are context, not the payoff,
-                  so they should never be the biggest thing on the row even on a tall screen.
-                  The dark pair keeps the dvh clamp from the height fix: 6dvh converges back
-                  to 60px once the viewport clears ~1000px tall, with a 36px floor.
+              {/* Muted pair stays a fixed, smaller scale and a lighter weight — they are
+                  context, not the payoff, so size, weight and color all agree they recede.
+                  The dark/accent pair keeps the dvh clamp from the height fix: 6dvh converges
+                  back to 60px once the viewport clears ~1000px tall, with a 36px floor.
                   gray-400 read as "too light" because it was: 2.54:1 against white, under the
                   4.5:1 floor for text this size — the same contrast mistake as the C/D header
                   bug earlier in this session, just in a new spot nothing had checked yet.
-                  gray-600 (7.56:1) for the number keeps it unmistakably a number and still
-                  visibly a step behind gray-900; gray-500 (4.83:1) for the label matches what
-                  every other label in this row already uses, so "muted" now means smaller and
-                  lower-contrast against its neighbour, not illegible. */}
+                  gray-600 (7.56:1) for the muted numbers keeps them unmistakably numbers and
+                  still visibly a step behind their neighbours; gray-500 (4.83:1) for every
+                  label matches what was already established for the dark pair's labels. */}
               <div
                 className={
-                  "font-display font-bold leading-none " +
-                  (s.muted
-                    ? "text-2xl sm:text-4xl text-gray-600"
-                    : "text-4xl sm:text-[length:clamp(2.25rem,6dvh,3.75rem)] text-gray-900")
+                  "font-display leading-none " +
+                  (s.variant === "muted"
+                    ? "text-2xl sm:text-4xl font-semibold text-gray-600"
+                    : "text-4xl sm:text-[length:clamp(2.25rem,6dvh,3.75rem)] font-bold "
+                      + (s.variant === "accent" ? "text-matcha-500" : "text-gray-900"))
                 }
               >
                 <Counter value={s.n} immediate />
               </div>
-              <div className={"mt-2 text-gray-500 " + (s.muted ? "text-[13px] sm:text-[15px]" : "text-[16px] sm:text-[18px]")}>
+              <div className={"mt-2 text-gray-500 " + (s.variant === "muted" ? "text-[13px] sm:text-[15px]" : "text-[16px] sm:text-[18px]")}>
                 {s.label}
               </div>
             </motion.div>
