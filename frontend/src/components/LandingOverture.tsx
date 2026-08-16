@@ -340,61 +340,67 @@ function Hero({ stats }: { stats: Props["stats"] }) {
           </Magnetic>
         </motion.div>
 
-        {/* Live proof. This briefly ran as four figures of equal weight — found, read, said
-            nothing, named a source — but only two of those are findings. "1,147" and "588"
-            answer how thorough the search was; a reader does not come to the first screen
-            asking that question, and printing them at the same size as the two numbers that
-            do answer it argued all four carried equal news. They didn't, so scope moved to a
-            caption and only the findings still get the giant digits.
-            The move also closes a gap the four-up row had: 488 + 86 = 574, not 588 — 14
-            cafes name only "Japanese matcha," no location, and belonged to neither figure.
-            Set beside each other, 588/488/86 invited that subtraction. As caption-plus-two,
-            nothing here claims the two hero numbers sum to the caption's, so the omitted 14
-            stops reading as an error. */}
-        <motion.p
-          className="mt-7 sm:mt-[clamp(0.75rem,3.5dvh,2.25rem)] text-[15px] sm:text-[16px] text-gray-500"
-          initial={reduce ? false : { opacity: 0, y: 8 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.6, ease: EASE_OUT, delay: 1.1 }}
-        >
-          Of <span className="text-gray-700 font-medium">{total.toLocaleString()}</span> cafes
-          found, <span className="text-gray-700 font-medium">{read.toLocaleString()}</span> had
-          a page we could read.
-        </motion.p>
-
+        {/* Live proof — four stats, not a sentence. This ran as a caption ("Of 1,147 cafes
+            found, 588 had a page we could read.") plus two hero numbers for a while, on the
+            reasoning that 1,147 and 588 are scope, not findings, and printing all four at
+            equal weight argued they carried equal news. That reasoning still holds — it is
+            why found/read stay small and muted while nothing/where stay large and dark — but
+            a caption sentence turned out to be the wrong way to carry the muted half: the
+            same scale-contrast idea now used in the finding section down the page (small
+            grey number beside a large dark one) says "this matters less" without leaving
+            numbers out of a row that is otherwise all numbers.
+            488 + 86 = 574, not 588 — 14 cafes name only "Japanese matcha," no location, and
+            belong to neither figure. Direct-labelled and side by side, that gap is visible to
+            anyone who adds the row up; it was the reason for the caption-only version
+            earlier. Left as-is here: the finding section carries the identical shape of gap
+            (86 stated beside 588, not summing to it) and stating the omission again in every
+            place these numbers appear would be the footnote this page already decided,
+            twice, not to keep re-litigating. */}
         <motion.div
-          // Two columns only — these are the two findings, so nothing about the layout should
-          // suggest a longer row was trimmed to fit.
-          className="mt-4 sm:mt-6 mx-auto grid grid-cols-2 max-w-xs sm:max-w-sm divide-x divide-gray-200"
+          // 2-up on mobile, 4-up from sm — a real width guard, not decoration: four columns
+          // on a 360px phone put "1,147" against a ~70px column with nothing to spare, so it
+          // steps through a 2×2 block on the narrowest screens instead of squeezing.
+          className="mt-7 sm:mt-[clamp(1rem,4dvh,2.5rem)] mx-auto grid grid-cols-2 sm:grid-cols-4 max-w-xs sm:max-w-2xl gap-y-5 sm:gap-y-0 divide-gray-200 [&>*:nth-child(odd)]:border-r sm:[&>*:nth-child(odd)]:border-r-0 sm:divide-x"
           initial={reduce ? false : { opacity: 0 }}
           animate={{ opacity: 1 }}
-          transition={{ duration: 0.8, delay: 1.25 }}
+          transition={{ duration: 0.8, delay: 1.1 }}
         >
           {[
-            { n: silent,   label: "say nothing" },
+            { n: total,    label: "cafes found",  muted: true },
+            { n: read,     label: "pages read",   muted: true },
+            { n: silent,   label: "say nothing",  muted: false },
             // "say where" rather than "name a source": it is the same fact, it fits the
             // narrow mobile column on one line where the longer phrase wrapped, and it
             // closes the headline's sentence — most cafes won't tell you where, and this
             // is exactly how many do.
-            { n: verified, label: "say where" },
+            { n: verified, label: "say where",    muted: false },
           ].map((s, i) => (
-            // Staggered left to right at 90ms so the two land in funnel order rather than
+            // Staggered left to right at 90ms so the four land in funnel order rather than
             // together — the drop from one figure to the next is the point.
             <motion.div
               key={s.label}
-              className="px-3 sm:px-9 text-center"
+              className="px-2 sm:px-7 text-center"
               initial={reduce ? false : { opacity: 0, y: 10 }}
               animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.5, ease: EASE_OUT, delay: 1.25 + i * 0.09 }}
+              transition={{ duration: 0.5, ease: EASE_OUT, delay: 1.1 + i * 0.09 }}
             >
-              {/* sm:text-6xl (60px) was the single biggest fixed block below the fold on a
-                  short window. 6dvh converges back to the same 60px once the viewport clears
-                  ~1000px tall, with a 2.25rem (36px) floor so the numbers stay legible as the
-                  hero digits they are rather than shrinking to caption size. */}
-              <div className="font-display text-4xl sm:text-[length:clamp(2.25rem,6dvh,3.75rem)] font-bold text-gray-900 leading-none">
+              {/* Muted pair stays a fixed, smaller scale — they are context, not the payoff,
+                  so they should never be the biggest thing on the row even on a tall screen.
+                  The dark pair keeps the dvh clamp from the height fix: 6dvh converges back
+                  to 60px once the viewport clears ~1000px tall, with a 36px floor. */}
+              <div
+                className={
+                  "font-display font-bold leading-none " +
+                  (s.muted
+                    ? "text-2xl sm:text-4xl text-gray-400"
+                    : "text-4xl sm:text-[length:clamp(2.25rem,6dvh,3.75rem)] text-gray-900")
+                }
+              >
                 <Counter value={s.n} immediate />
               </div>
-              <div className="text-[16px] sm:text-[18px] text-gray-500 mt-2">{s.label}</div>
+              <div className={"mt-2 " + (s.muted ? "text-[13px] sm:text-[15px] text-gray-400" : "text-[16px] sm:text-[18px] text-gray-500")}>
+                {s.label}
+              </div>
             </motion.div>
           ))}
         </motion.div>
