@@ -214,7 +214,17 @@ function Hero({ stats }: { stats: Props["stats"] }) {
       // desktop spacing spent 136px of a 568px phone on padding alone, which pushed the
       // figures — the part that earns the search — under the fold on short devices.
       // pt-[4.5rem] still clears the 64px fixed navbar with room to spare.
-      className="relative min-h-[100dvh] flex flex-col items-center justify-center px-5 pt-[4.5rem] pb-8 sm:pt-20 sm:pb-14 overflow-hidden"
+      //
+      // sm:pt-20/sm:pb-14 were fixed values keyed only to width, which is the wrong axis
+      // for "does this fit the screen": a wide-but-short windowed browser (a reader's own
+      // screenshot showed ~650px of usable height) gets full desktop spacing regardless of
+      // how little vertical room it has, since sm: doesn't know the window is short. 8dvh /
+      // 5.5dvh converge back to exactly 80px / 56px once the viewport clears ~1000px tall,
+      // so a normal or tall desktop window looks identical to before — only short windows
+      // compress. Estimated by hand (font metrics, not a real layout engine); this needs
+      // confirming in an actual browser, same caveat as everywhere else in this file that
+      // reasons about pixels without one.
+      className="relative min-h-[100dvh] flex flex-col items-center justify-center px-5 pt-[4.5rem] pb-8 sm:pt-[clamp(1.5rem,8dvh,5rem)] sm:pb-[clamp(1rem,5.5dvh,3.5rem)] overflow-hidden"
     >
       {/* Parallax ground — three layers, slowest at the back */}
       <motion.div aria-hidden className="absolute inset-0 -z-10" style={{ y: glowY }}>
@@ -231,7 +241,7 @@ function Hero({ stats }: { stats: Props["stats"] }) {
       <motion.div style={{ y: headlineY, opacity: fade }} className="w-full max-w-4xl mx-auto text-center">
         {/* Eyebrow */}
         <motion.div
-          className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full mb-4 sm:mb-6"
+          className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full mb-4 sm:mb-[clamp(0.5rem,2.4dvh,1.5rem)]"
           style={{ background: "#f2f8f0", border: "1px solid #c2e1b5" }}
           initial={reduce ? false : { opacity: 0, y: -10 }}
           animate={{ opacity: 1, y: 0 }}
@@ -257,8 +267,13 @@ function Hero({ stats }: { stats: Props["stats"] }) {
             on the verb rather than on a character judgement. */}
         {/* Size steps down only below 360px. From 360 up this is the same 2.5rem it has
             always been, and from sm up the same clamp — the narrowest phones were the only
-            ones where a 40px display face wrapped this sentence to six lines. */}
-        <h1 className="font-display font-bold leading-[0.92] tracking-tight text-gray-900 text-[2.15rem] min-[360px]:text-[2.5rem] sm:text-[length:clamp(2.5rem,7vw,5.5rem)]"
+            ones where a 40px display face wrapped this sentence to six lines.
+            sm+ adds a height term: min(7vw, 8dvh). 7vw alone doesn't know the window is
+            short — a wide desktop screen at 650px tall was still rendering the full 5.5rem
+            cap, and this headline alone was ~250-320px of that overflow. 8dvh converges back
+            to the same 5.5rem cap once the window clears ~1100px tall, so it only engages
+            below that — a normal desktop window is unaffected. */}
+        <h1 className="font-display font-bold leading-[0.92] tracking-tight text-gray-900 text-[2.15rem] min-[360px]:text-[2.5rem] sm:text-[length:clamp(2.5rem,min(7vw,8dvh),5.5rem)]"
             style={{ perspective: 800 }}>
           <SplitHeadline text="Most cafes" />
           <br />
@@ -284,7 +299,7 @@ function Hero({ stats }: { stats: Props["stats"] }) {
             on every quote below ("Verified {date}"), which is where a reader checking a
             specific claim actually needs it, not in a blanket line above the fold. */}
         <motion.p
-          className="mt-4 sm:mt-6 text-[16px] sm:text-[18px] text-gray-600 max-w-xl mx-auto leading-relaxed"
+          className="mt-4 sm:mt-[clamp(0.5rem,2.4dvh,1.5rem)] text-[16px] sm:text-[18px] text-gray-600 max-w-xl mx-auto leading-relaxed"
           initial={reduce ? false : { opacity: 0, y: 14 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.7, ease: EASE_EXPO, delay: 0.75 }}
@@ -299,7 +314,7 @@ function Hero({ stats }: { stats: Props["stats"] }) {
             second way to leave the page, so the button can afford to be the visually
             heaviest object here instead of splitting weight with an input beside it. */}
         <motion.div
-          className="mt-8 sm:mt-11 flex justify-center"
+          className="mt-8 sm:mt-[clamp(1rem,4.5dvh,2.75rem)] flex justify-center"
           initial={reduce ? false : { opacity: 0, y: 18 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.7, ease: EASE_EXPO, delay: 0.88 }}
@@ -337,7 +352,7 @@ function Hero({ stats }: { stats: Props["stats"] }) {
             nothing here claims the two hero numbers sum to the caption's, so the omitted 14
             stops reading as an error. */}
         <motion.p
-          className="mt-7 sm:mt-9 text-[15px] sm:text-[16px] text-gray-500"
+          className="mt-7 sm:mt-[clamp(0.75rem,3.5dvh,2.25rem)] text-[15px] sm:text-[16px] text-gray-500"
           initial={reduce ? false : { opacity: 0, y: 8 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.6, ease: EASE_OUT, delay: 1.1 }}
@@ -372,7 +387,11 @@ function Hero({ stats }: { stats: Props["stats"] }) {
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.5, ease: EASE_OUT, delay: 1.25 + i * 0.09 }}
             >
-              <div className="font-display text-4xl sm:text-6xl font-bold text-gray-900 leading-none">
+              {/* sm:text-6xl (60px) was the single biggest fixed block below the fold on a
+                  short window. 6dvh converges back to the same 60px once the viewport clears
+                  ~1000px tall, with a 2.25rem (36px) floor so the numbers stay legible as the
+                  hero digits they are rather than shrinking to caption size. */}
+              <div className="font-display text-4xl sm:text-[length:clamp(2.25rem,6dvh,3.75rem)] font-bold text-gray-900 leading-none">
                 <Counter value={s.n} immediate />
               </div>
               <div className="text-[16px] sm:text-[18px] text-gray-500 mt-2">{s.label}</div>
