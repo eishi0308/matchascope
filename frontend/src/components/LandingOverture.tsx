@@ -200,9 +200,12 @@ function Hero({ stats }: { stats: Props["stats"] }) {
 
   const total    = stats?.total ?? 1147;
   const verified = stats?.byLevel?.A ?? 86;
-  // Same source as the disclosure card's denominator, so the hero card and the
+  // Same source as the disclosure card's denominator, so the hero funnel and the
   // breakdown below can never quote different totals for "we could read this".
   const read     = stats?.assessable ?? 588;
+  // Read, minus everyone who said something — A names a source, B says only
+  // "Japanese matcha". What is left published nothing about origin at all.
+  const silent   = Math.max(0, read - verified - (stats?.byLevel?.B ?? 14));
 
   return (
     <section
@@ -211,17 +214,7 @@ function Hero({ stats }: { stats: Props["stats"] }) {
       // desktop spacing spent 136px of a 568px phone on padding alone, which pushed the
       // figures — the part that earns the search — under the fold on short devices.
       // pt-[4.5rem] still clears the 64px fixed navbar with room to spare.
-      //
-      // sm:pt-20/sm:pb-14 were fixed values keyed only to width, which is the wrong axis
-      // for "does this fit the screen": a wide-but-short windowed browser (a reader's own
-      // screenshot showed ~650px of usable height) gets full desktop spacing regardless of
-      // how little vertical room it has, since sm: doesn't know the window is short. 8dvh /
-      // 5.5dvh converge back to exactly 80px / 56px once the viewport clears ~1000px tall,
-      // so a normal or tall desktop window looks identical to before — only short windows
-      // compress. Estimated by hand (font metrics, not a real layout engine); this needs
-      // confirming in an actual browser, same caveat as everywhere else in this file that
-      // reasons about pixels without one.
-      className="relative min-h-[100dvh] flex flex-col items-center justify-center px-5 pt-[4.5rem] pb-8 sm:pt-[clamp(1.5rem,8dvh,5rem)] sm:pb-[clamp(1rem,5.5dvh,3.5rem)] overflow-hidden"
+      className="relative min-h-[100dvh] flex flex-col items-center justify-center px-5 pt-[4.5rem] pb-8 sm:pt-20 sm:pb-14 overflow-hidden"
     >
       {/* Parallax ground — three layers, slowest at the back */}
       <motion.div aria-hidden className="absolute inset-0 -z-10" style={{ y: glowY }}>
@@ -238,7 +231,7 @@ function Hero({ stats }: { stats: Props["stats"] }) {
       <motion.div style={{ y: headlineY, opacity: fade }} className="w-full max-w-4xl mx-auto text-center">
         {/* Eyebrow */}
         <motion.div
-          className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full mb-4 sm:mb-[clamp(0.5rem,2.4dvh,1.5rem)]"
+          className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full mb-4 sm:mb-6"
           style={{ background: "#f2f8f0", border: "1px solid #c2e1b5" }}
           initial={reduce ? false : { opacity: 0, y: -10 }}
           animate={{ opacity: 1, y: 0 }}
@@ -264,13 +257,8 @@ function Hero({ stats }: { stats: Props["stats"] }) {
             on the verb rather than on a character judgement. */}
         {/* Size steps down only below 360px. From 360 up this is the same 2.5rem it has
             always been, and from sm up the same clamp — the narrowest phones were the only
-            ones where a 40px display face wrapped this sentence to six lines.
-            sm+ adds a height term: min(7vw, 8dvh). 7vw alone doesn't know the window is
-            short — a wide desktop screen at 650px tall was still rendering the full 5.5rem
-            cap, and this headline alone was ~250-320px of that overflow. 8dvh converges back
-            to the same 5.5rem cap once the window clears ~1100px tall, so it only engages
-            below that — a normal desktop window is unaffected. */}
-        <h1 className="font-display font-bold leading-[0.92] tracking-tight text-gray-900 text-[2.15rem] min-[360px]:text-[2.5rem] sm:text-[length:clamp(2.5rem,min(7vw,8dvh),5.5rem)]"
+            ones where a 40px display face wrapped this sentence to six lines. */}
+        <h1 className="font-display font-bold leading-[0.92] tracking-tight text-gray-900 text-[2.15rem] min-[360px]:text-[2.5rem] sm:text-[length:clamp(2.5rem,7vw,5.5rem)]"
             style={{ perspective: 800 }}>
           <SplitHeadline text="Most cafes" />
           <br />
@@ -288,22 +276,16 @@ function Hero({ stats }: { stats: Props["stats"] }) {
             larger number under the verb "read" overstated the crawl by 559 cafes and put the
             first screen in direct contradiction with the disclosure card further down. No
             number here now: the funnel immediately below counts, in the right order, with
-            the right verbs, and the sentence only has to say what was done.
-            It also used to close on "Dated and linked." — two clipped fragments bolted onto
-            the end, the kind of staccato list a machine reaches for when it's trying to sound
-            terse. "Linked straight to the source" folds the one claim worth keeping into the
-            sentence it belongs to; the date isn't asserted here at all — it's already sitting
-            on every quote below ("Verified {date}"), which is where a reader checking a
-            specific claim actually needs it, not in a blanket line above the fold. */}
+            the right verbs, and the sentence only has to say what was done. */}
         <motion.p
-          className="mt-4 sm:mt-[clamp(0.5rem,2.4dvh,1.5rem)] text-[16px] sm:text-[18px] text-gray-600 max-w-xl mx-auto leading-relaxed"
+          className="mt-4 sm:mt-6 text-[16px] sm:text-[18px] text-gray-600 max-w-xl mx-auto leading-relaxed"
           initial={reduce ? false : { opacity: 0, y: 14 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.7, ease: EASE_EXPO, delay: 0.75 }}
         >
           So we read every page we could open — website, menu, socials — and quoted
-          exactly what they <span className="text-gray-900 font-medium">do</span> say,
-          linked straight to the source.
+          exactly what they <span className="text-gray-900 font-medium">do</span> say.
+          Dated and linked.
         </motion.p>
 
         {/* The search field is gone — this is now a single, unambiguous CTA rather than a
@@ -311,7 +293,7 @@ function Hero({ stats }: { stats: Props["stats"] }) {
             second way to leave the page, so the button can afford to be the visually
             heaviest object here instead of splitting weight with an input beside it. */}
         <motion.div
-          className="mt-8 sm:mt-[clamp(1rem,4.5dvh,2.75rem)] flex justify-center"
+          className="mt-8 sm:mt-11 flex justify-center"
           initial={reduce ? false : { opacity: 0, y: 18 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.7, ease: EASE_EXPO, delay: 0.88 }}
@@ -337,66 +319,59 @@ function Hero({ stats }: { stats: Props["stats"] }) {
           </Magnetic>
         </motion.div>
 
-        {/* The proof moved onto the first screen itself — the same dark card built for the
-            scroll-triggered finding section further down, brought up here instead of making
-            a reader scroll to reach it. That section is untouched for now: this is additive,
-            not a replacement, so nothing scrolled-to becomes a repeat of something already
-            seen — worth revisiting if that turns out to read as redundant once both are live.
-            488 (say nothing) is dropped rather than squeezed in: the card this is modelled on
-            carries two numbers, not three, and the "say nothing" side of the story already
-            has its own home in the breakdown section — this card's job is just found vs
-            disclosed. pct is new: the finding section states 86 as a count only, but a count
-            alone still asks the reader to do the division against the caption's 588 to feel
-            how rare it is, so the percentage sits directly on the number it belongs to. */}
-        <motion.div
-          className="mt-8 sm:mt-[clamp(0.75rem,3dvh,3rem)] mx-auto max-w-xl rounded-[28px]"
-          style={{ background: "#0f2010", border: "1px solid rgba(255,255,255,0.09)" }}
-          initial={reduce ? false : { opacity: 0, y: 18 }}
+        {/* Live proof. This briefly ran as four figures of equal weight — found, read, said
+            nothing, named a source — but only two of those are findings. "1,147" and "588"
+            answer how thorough the search was; a reader does not come to the first screen
+            asking that question, and printing them at the same size as the two numbers that
+            do answer it argued all four carried equal news. They didn't, so scope moved to a
+            caption and only the findings still get the giant digits.
+            The move also closes a gap the four-up row had: 488 + 86 = 574, not 588 — 14
+            cafes name only "Japanese matcha," no location, and belonged to neither figure.
+            Set beside each other, 588/488/86 invited that subtraction. As caption-plus-two,
+            nothing here claims the two hero numbers sum to the caption's, so the omitted 14
+            stops reading as an error. */}
+        <motion.p
+          className="mt-7 sm:mt-9 text-[15px] sm:text-[16px] text-gray-500"
+          initial={reduce ? false : { opacity: 0, y: 8 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.7, ease: EASE_EXPO, delay: 1.1 }}
+          transition={{ duration: 0.6, ease: EASE_OUT, delay: 1.1 }}
         >
-          {/* This card is new weight added to an already-tuned hero — the same short-window
-              overflow the rest of this file fixes for via dvh now applies to its own padding
-              and type sizes too, or it reintroduces exactly the bug that work closed. Every
-              clamp below follows the same rule as the rest of the file: converges to its
-              plain rem/vw value once the viewport clears ~1000px tall, so a normal window
-              sees no difference and only a short one compresses. */}
-          <div className="px-6 py-8 sm:px-12 sm:py-[clamp(0.75rem,3.2dvh,2.5rem)]">
-            <div className="flex items-baseline justify-center gap-6 sm:gap-10 flex-wrap">
-              <div className="text-center">
-                <div className="font-display font-bold leading-none text-white/45"
-                     style={{ fontSize: "clamp(1.75rem, min(8vw,5.5dvh), 3.75rem)" }}>
-                  <Counter value={total} immediate />
-                </div>
-                <div className="text-[14px] sm:text-[16px] text-white/45 mt-2">cafes found</div>
-              </div>
-              <div className="text-center">
-                <div className="flex items-baseline justify-center gap-2">
-                  <div className="font-display font-bold leading-none text-matcha-400"
-                       style={{ fontSize: "clamp(2.75rem, min(15vw,9.5dvh), 7rem)" }}>
-                    <Counter value={verified} immediate />
-                  </div>
-                  {/* The percentage this row asked for, over the same 588 the caption below
-                      names — 86/588, not 86/1,147, since that is the denominator this card
-                      itself claims. Its own pill rather than plain text so it reads as a
-                      second, smaller figure rather than a unit tacked onto 86. */}
-                  <span
-                    className="font-display font-semibold text-matcha-300 rounded-full px-2.5 py-1"
-                    style={{ fontSize: "clamp(1rem, min(3.4vw,2.4dvh), 1.5rem)", background: "rgba(110,179,92,0.14)" }}
-                  >
-                    {Math.round((verified / read) * 100)}%
-                  </span>
-                </div>
-                <div className="text-[15px] sm:text-[17px] text-white font-semibold mt-2">say where it&rsquo;s from</div>
-              </div>
-            </div>
+          Of <span className="text-gray-700 font-medium">{total.toLocaleString()}</span> cafes
+          found, <span className="text-gray-700 font-medium">{read.toLocaleString()}</span> had
+          a page we could read.
+        </motion.p>
 
-            <div className="h-px mt-6 sm:mt-[clamp(0.75rem,3dvh,2rem)]" style={{ background: "rgba(255,255,255,0.12)" }} />
-
-            <p className="mt-4 sm:mt-[clamp(0.5rem,2dvh,1.25rem)] text-center text-[14px] sm:text-[15px] leading-relaxed text-white/55">
-              Of the {read.toLocaleString()} cafés whose page could actually be read.
-            </p>
-          </div>
+        <motion.div
+          // Two columns only — these are the two findings, so nothing about the layout should
+          // suggest a longer row was trimmed to fit.
+          className="mt-4 sm:mt-6 mx-auto grid grid-cols-2 max-w-xs sm:max-w-sm divide-x divide-gray-200"
+          initial={reduce ? false : { opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ duration: 0.8, delay: 1.25 }}
+        >
+          {[
+            { n: silent,   label: "say nothing" },
+            // "say where" rather than "name a source": it is the same fact, it fits the
+            // narrow mobile column on one line where the longer phrase wrapped, and it
+            // closes the headline's sentence — most cafes won't tell you where, and this
+            // is exactly how many do.
+            { n: verified, label: "say where" },
+          ].map((s, i) => (
+            // Staggered left to right at 90ms so the two land in funnel order rather than
+            // together — the drop from one figure to the next is the point.
+            <motion.div
+              key={s.label}
+              className="px-3 sm:px-9 text-center"
+              initial={reduce ? false : { opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.5, ease: EASE_OUT, delay: 1.25 + i * 0.09 }}
+            >
+              <div className="font-display text-4xl sm:text-6xl font-bold text-gray-900 leading-none">
+                <Counter value={s.n} immediate />
+              </div>
+              <div className="text-[16px] sm:text-[18px] text-gray-500 mt-2">{s.label}</div>
+            </motion.div>
+          ))}
         </motion.div>
       </motion.div>
 
@@ -499,20 +474,13 @@ function DisclosureStat({ stats }: { stats: Props["stats"] }) {
   // after the reader had already arrived.
   const { scrollYProgress } = useScroll({ target: ref, offset: ["start end", "end end"] });
 
-  // This used to lead on a percentage ("17% of cafés we could read say their matcha is
-  // Japanese"), computed over the readable subset. Replaced with the two counting numbers
-  // directly — every cafe found, and how many actually say where it's from — because a
-  // percentage makes the reader do the division themselves, and 1,147 vs 86 is the finding
-  // stated, not summarised. The denominator question this invites ("why 588, not 1,147?")
-  // is the same one the hero funnel and the breakdown card already answer, so the caption
-  // below carries it in one line rather than repeating the full explanation a third time.
-  const total    = stats?.total ?? 1147;
-  const verified = stats?.byLevel?.A ?? 86;
-  const read     = stats?.assessable ?? 588;
-  // The arc still draws a real proportion, just a different one: 86 of 1,147, not the old
-  // 17% of 588. A ring drawn mostly dim with one thin lit sliver is the same "so few, out of
-  // so many" point the numbers make, so it survives the rewrite rather than being cut.
-  const share = verified / total;
+  // Same definition as the disclosure section further down the page: cafes that
+  // say anything about Japanese origin (A + B), over the cafes we could read.
+  // Two different figures for one fact would read as an error.
+  const named = (stats?.byLevel?.A ?? 86) + (stats?.byLevel?.B ?? 14);
+  const read  = stats?.assessable ?? 588;
+  const pct   = Math.round((named / read) * 100);
+  const share = named / read;
 
   // Travel here is one section height, and the panel pins at ~0.93 of it
   // (measured). So the arc runs the length of the approach and completes just
@@ -559,57 +527,30 @@ function DisclosureStat({ stats }: { stats: Props["stats"] }) {
           />
         </svg>
 
-        <div className="text-[16px] uppercase tracking-[0.2em] text-matcha-300 font-semibold mb-5 sm:mb-7">
-          The finding
-        </div>
-
-        {/* Bordered card rather than the numbers floating loose on the section background —
-            a distinct surface the reader's eye lands on first, with a divider separating the
-            finding itself from the one line of method underneath it, instead of a bare gap
-            doing that job by whitespace alone. The eyebrow stays outside it, above: every
-            other section on this page centres its label over the content rather than
-            tucking it into a corner, and this one following suit is what makes it read as
-            the same kind of section as the rest, not a one-off card style. */}
-        <div className="relative mx-5 max-w-2xl sm:mx-auto rounded-[28px]"
-             style={{ background: "rgba(255,255,255,0.035)", border: "1px solid rgba(255,255,255,0.09)" }}>
-          <div className="px-6 py-8 sm:px-16 sm:py-12">
-            <motion.div style={{ scale }} className="text-center">
-              {/* Small and muted, next to large and lit — the same scale-contrast pairing as
-                  the hero funnel. 1,147 sits low enough not to fight 86 for the eye; 86 keeps
-                  most of the size budget the old percentage had. */}
-              <div className="flex items-baseline justify-center gap-5 sm:gap-10 flex-wrap">
-                <div>
-                  <div className="font-display font-bold leading-none text-white/45"
-                       style={{ fontSize: "clamp(2.25rem, 9vw, 4.75rem)" }}>
-                    <Counter value={total} immediate />
-                  </div>
-                  <div className="text-[15px] sm:text-[17px] text-white/45 mt-2">cafes found</div>
-                </div>
-                <div>
-                  <div className="font-display font-bold leading-none text-matcha-400"
-                       style={{ fontSize: "clamp(4.5rem, 19vw, 10rem)" }}>
-                    <Counter value={verified} />
-                  </div>
-                  <div className="text-[16px] sm:text-[19px] text-white font-semibold mt-2">say where it&rsquo;s from</div>
-                </div>
-              </div>
-            </motion.div>
-
-            <div className="h-px mt-7 sm:mt-9" style={{ background: "rgba(255,255,255,0.12)" }} />
-
-            <motion.p
-              style={{ y: copyY, opacity: copyOp }}
-              className="mt-5 sm:mt-6 text-center text-[16px] leading-relaxed text-white/60"
-            >
-              {/* This used to be "Only 86 of them name a region, farm or supplier" — restating
-                  the 86 that is now the headline number itself. What the reader needs here
-                  instead is the same honest denominator note the hero and the breakdown card
-                  both carry: 559 of the 1,147 were never read at all, so this isn't 86 out of
-                  1,147 checked, it's 86 out of the 588 that could be. */}
-              Of the {read.toLocaleString()} cafés whose page could actually be read.
-            </motion.p>
+        <motion.div style={{ scale }} className="text-center px-5">
+          <div className="text-[16px] uppercase tracking-[0.2em] text-matcha-300 font-semibold mb-5">
+            The finding
           </div>
-        </div>
+          <div className="font-display font-bold leading-none text-white flex items-baseline justify-center"
+               style={{ fontSize: "clamp(5rem, 22vw, 16rem)" }}>
+            <Counter value={pct} />
+            <span className="text-matcha-400 ml-1" style={{ fontSize: "0.42em" }}>%</span>
+          </div>
+          <div className="font-display text-2xl sm:text-4xl text-white/90 mt-3 leading-snug">
+            of cafés we could read say
+            <br className="sm:hidden" /> their matcha is Japanese.
+          </div>
+        </motion.div>
+
+        <motion.p
+          style={{ y: copyY, opacity: copyOp }}
+          className="mt-7 max-w-lg text-center text-[16px] leading-relaxed text-white/60 px-6"
+        >
+          {/* "The full breakdown is below" was a stage direction: the breakdown is below,
+              visibly, and a line of copy spent pointing at the next scroll is a line not
+              spent on the finding. */}
+          Only {stats?.byLevel?.A ?? 86} of them name a region, farm or supplier.
+        </motion.p>
       </div>
     </section>
   );
