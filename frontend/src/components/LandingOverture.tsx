@@ -200,12 +200,9 @@ function Hero({ stats }: { stats: Props["stats"] }) {
 
   const total    = stats?.total ?? 1147;
   const verified = stats?.byLevel?.A ?? 86;
-  // Same source as the disclosure card's denominator, so the hero funnel and the
+  // Same source as the disclosure card's denominator, so the hero card and the
   // breakdown below can never quote different totals for "we could read this".
   const read     = stats?.assessable ?? 588;
-  // Read, minus everyone who said something — A names a source, B says only
-  // "Japanese matcha". What is left published nothing about origin at all.
-  const silent   = Math.max(0, read - verified - (stats?.byLevel?.B ?? 14));
 
   return (
     <section
@@ -340,62 +337,66 @@ function Hero({ stats }: { stats: Props["stats"] }) {
           </Magnetic>
         </motion.div>
 
-        {/* Live proof — three stats, not a sentence. 588 (pages read) sat here as a second
-            muted figure, but a reader does not need the intermediate step between "found"
-            and the two outcomes to feel the finding — cutting it left the row asking one
-            clean question (how many, found, actually said where) instead of walking through
-            the method again. No more muted tier either: every number here now carries full
-            dark weight, so "1,147" reads as a real figure in its own right rather than a
-            footnote to the two beside it — the row makes its point through what earns color
-            (green, once, on the one disclosed state) rather than through what gets dimmed. */}
+        {/* The proof moved onto the first screen itself — the same dark card built for the
+            scroll-triggered finding section further down, brought up here instead of making
+            a reader scroll to reach it. That section is untouched for now: this is additive,
+            not a replacement, so nothing scrolled-to becomes a repeat of something already
+            seen — worth revisiting if that turns out to read as redundant once both are live.
+            488 (say nothing) is dropped rather than squeezed in: the card this is modelled on
+            carries two numbers, not three, and the "say nothing" side of the story already
+            has its own home in the breakdown section — this card's job is just found vs
+            disclosed. pct is new: the finding section states 86 as a count only, but a count
+            alone still asks the reader to do the division against the caption's 588 to feel
+            how rare it is, so the percentage sits directly on the number it belongs to. */}
         <motion.div
-          className="mt-7 sm:mt-[clamp(1rem,4dvh,2.5rem)] mx-auto grid grid-cols-3 max-w-sm sm:max-w-2xl divide-x divide-gray-200"
-          initial={reduce ? false : { opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ duration: 0.8, delay: 1.1 }}
+          className="mt-8 sm:mt-[clamp(0.75rem,3dvh,3rem)] mx-auto max-w-xl rounded-[28px]"
+          style={{ background: "#0f2010", border: "1px solid rgba(255,255,255,0.09)" }}
+          initial={reduce ? false : { opacity: 0, y: 18 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.7, ease: EASE_EXPO, delay: 1.1 }}
         >
-          {[
-            { n: total,    label: "cafes found", variant: "dark"   as const },
-            { n: silent,   label: "say nothing", variant: "dark"   as const },
-            // "say where" rather than "name a source": it is the same fact, it fits the
-            // narrow mobile column on one line where the longer phrase wrapped, and it
-            // closes the headline's sentence — most cafes won't tell you where, and this
-            // is exactly how many do.
-            //
-            // This is the only accent-coloured number in the row. Every other grade of
-            // "did they say anything" reads in gray or near-black across this whole site —
-            // A-level badges, the marquee, the finding section's own "86" further down the
-            // page — matcha green means exactly one thing everywhere it appears: disclosed.
-            // 488 stays neutral dark rather than getting a warning color of its own, because
-            // "silent" is not a verdict this site passes, just a count — green is reserved
-            // for the one state the brand actually marks.
-            { n: verified, label: "say where",   variant: "accent" as const },
-          ].map((s, i) => (
-            // Staggered left to right at 90ms so the three land in funnel order rather than
-            // together — the drop from one figure to the next is the point.
-            <motion.div
-              key={s.label}
-              className="px-3 sm:px-9 text-center"
-              initial={reduce ? false : { opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.5, ease: EASE_OUT, delay: 1.1 + i * 0.09 }}
-            >
-              {/* Every number is full weight and full dark now — the dvh clamp from the
-                  height fix still applies: 6dvh converges back to 60px once the viewport
-                  clears ~1000px tall, with a 36px floor. */}
-              <div
-                className={
-                  "font-display text-4xl sm:text-[length:clamp(2.25rem,6dvh,3.75rem)] font-bold leading-none "
-                  + (s.variant === "accent" ? "text-matcha-500" : "text-gray-900")
-                }
-              >
-                <Counter value={s.n} immediate />
+          {/* This card is new weight added to an already-tuned hero — the same short-window
+              overflow the rest of this file fixes for via dvh now applies to its own padding
+              and type sizes too, or it reintroduces exactly the bug that work closed. Every
+              clamp below follows the same rule as the rest of the file: converges to its
+              plain rem/vw value once the viewport clears ~1000px tall, so a normal window
+              sees no difference and only a short one compresses. */}
+          <div className="px-6 py-8 sm:px-12 sm:py-[clamp(0.75rem,3.2dvh,2.5rem)]">
+            <div className="flex items-baseline justify-center gap-6 sm:gap-10 flex-wrap">
+              <div className="text-center">
+                <div className="font-display font-bold leading-none text-white/45"
+                     style={{ fontSize: "clamp(1.75rem, min(8vw,5.5dvh), 3.75rem)" }}>
+                  <Counter value={total} immediate />
+                </div>
+                <div className="text-[14px] sm:text-[16px] text-white/45 mt-2">cafes found</div>
               </div>
-              <div className="mt-2 text-[16px] sm:text-[18px] text-gray-500">
-                {s.label}
+              <div className="text-center">
+                <div className="flex items-baseline justify-center gap-2">
+                  <div className="font-display font-bold leading-none text-matcha-400"
+                       style={{ fontSize: "clamp(2.75rem, min(15vw,9.5dvh), 7rem)" }}>
+                    <Counter value={verified} immediate />
+                  </div>
+                  {/* The percentage this row asked for, over the same 588 the caption below
+                      names — 86/588, not 86/1,147, since that is the denominator this card
+                      itself claims. Its own pill rather than plain text so it reads as a
+                      second, smaller figure rather than a unit tacked onto 86. */}
+                  <span
+                    className="font-display font-semibold text-matcha-300 rounded-full px-2.5 py-1"
+                    style={{ fontSize: "clamp(1rem, min(3.4vw,2.4dvh), 1.5rem)", background: "rgba(110,179,92,0.14)" }}
+                  >
+                    {Math.round((verified / read) * 100)}%
+                  </span>
+                </div>
+                <div className="text-[15px] sm:text-[17px] text-white font-semibold mt-2">say where it&rsquo;s from</div>
               </div>
-            </motion.div>
-          ))}
+            </div>
+
+            <div className="h-px mt-6 sm:mt-[clamp(0.75rem,3dvh,2rem)]" style={{ background: "rgba(255,255,255,0.12)" }} />
+
+            <p className="mt-4 sm:mt-[clamp(0.5rem,2dvh,1.25rem)] text-center text-[14px] sm:text-[15px] leading-relaxed text-white/55">
+              Of the {read.toLocaleString()} cafés whose page could actually be read.
+            </p>
+          </div>
         </motion.div>
       </motion.div>
 
