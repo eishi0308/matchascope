@@ -276,7 +276,13 @@ function Hero({ stats }: { stats: Props["stats"] }) {
             larger number under the verb "read" overstated the crawl by 559 cafes and put the
             first screen in direct contradiction with the disclosure card further down. No
             number here now: the funnel immediately below counts, in the right order, with
-            the right verbs, and the sentence only has to say what was done. */}
+            the right verbs, and the sentence only has to say what was done.
+            It also used to close on "Dated and linked." — two clipped fragments bolted onto
+            the end, the kind of staccato list a machine reaches for when it's trying to sound
+            terse. "Linked straight to the source" folds the one claim worth keeping into the
+            sentence it belongs to; the date isn't asserted here at all — it's already sitting
+            on every quote below ("Verified {date}"), which is where a reader checking a
+            specific claim actually needs it, not in a blanket line above the fold. */}
         <motion.p
           className="mt-4 sm:mt-6 text-[16px] sm:text-[18px] text-gray-600 max-w-xl mx-auto leading-relaxed"
           initial={reduce ? false : { opacity: 0, y: 14 }}
@@ -284,8 +290,8 @@ function Hero({ stats }: { stats: Props["stats"] }) {
           transition={{ duration: 0.7, ease: EASE_EXPO, delay: 0.75 }}
         >
           So we read every page we could open — website, menu, socials — and quoted
-          exactly what they <span className="text-gray-900 font-medium">do</span> say.
-          Dated and linked.
+          exactly what they <span className="text-gray-900 font-medium">do</span> say,
+          linked straight to the source.
         </motion.p>
 
         {/* The search field is gone — this is now a single, unambiguous CTA rather than a
