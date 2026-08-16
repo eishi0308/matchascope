@@ -340,35 +340,23 @@ function Hero({ stats }: { stats: Props["stats"] }) {
           </Magnetic>
         </motion.div>
 
-        {/* Live proof — four stats, not a sentence. This ran as a caption ("Of 1,147 cafes
-            found, 588 had a page we could read.") plus two hero numbers for a while, on the
-            reasoning that 1,147 and 588 are scope, not findings, and printing all four at
-            equal weight argued they carried equal news. That reasoning still holds — it is
-            why found/read stay small and muted while nothing/where stay large and dark — but
-            a caption sentence turned out to be the wrong way to carry the muted half: the
-            same scale-contrast idea now used in the finding section down the page (small
-            grey number beside a large dark one) says "this matters less" without leaving
-            numbers out of a row that is otherwise all numbers.
-            488 + 86 = 574, not 588 — 14 cafes name only "Japanese matcha," no location, and
-            belong to neither figure. Direct-labelled and side by side, that gap is visible to
-            anyone who adds the row up; it was the reason for the caption-only version
-            earlier. Left as-is here: the finding section carries the identical shape of gap
-            (86 stated beside 588, not summing to it) and stating the omission again in every
-            place these numbers appear would be the footnote this page already decided,
-            twice, not to keep re-litigating. */}
+        {/* Live proof — three stats, not a sentence. 588 (pages read) sat here as a second
+            muted figure, but a reader does not need the intermediate step between "found"
+            and the two outcomes to feel the finding — cutting it left the row asking one
+            clean question (how many, found, actually said where) instead of walking through
+            the method again. No more muted tier either: every number here now carries full
+            dark weight, so "1,147" reads as a real figure in its own right rather than a
+            footnote to the two beside it — the row makes its point through what earns color
+            (green, once, on the one disclosed state) rather than through what gets dimmed. */}
         <motion.div
-          // 2-up on mobile, 4-up from sm — a real width guard, not decoration: four columns
-          // on a 360px phone put "1,147" against a ~70px column with nothing to spare, so it
-          // steps through a 2×2 block on the narrowest screens instead of squeezing.
-          className="mt-7 sm:mt-[clamp(1rem,4dvh,2.5rem)] mx-auto grid grid-cols-2 sm:grid-cols-4 max-w-xs sm:max-w-2xl gap-y-5 sm:gap-y-0 divide-gray-200 [&>*:nth-child(odd)]:border-r sm:[&>*:nth-child(odd)]:border-r-0 sm:divide-x"
+          className="mt-7 sm:mt-[clamp(1rem,4dvh,2.5rem)] mx-auto grid grid-cols-3 max-w-sm sm:max-w-2xl divide-x divide-gray-200"
           initial={reduce ? false : { opacity: 0 }}
           animate={{ opacity: 1 }}
           transition={{ duration: 0.8, delay: 1.1 }}
         >
           {[
-            { n: total,    label: "cafes found",  variant: "muted"  as const },
-            { n: read,     label: "pages read",   variant: "muted"  as const },
-            { n: silent,   label: "say nothing",  variant: "dark"   as const },
+            { n: total,    label: "cafes found", variant: "dark"   as const },
+            { n: silent,   label: "say nothing", variant: "dark"   as const },
             // "say where" rather than "name a source": it is the same fact, it fits the
             // narrow mobile column on one line where the longer phrase wrapped, and it
             // closes the headline's sentence — most cafes won't tell you where, and this
@@ -378,43 +366,32 @@ function Hero({ stats }: { stats: Props["stats"] }) {
             // "did they say anything" reads in gray or near-black across this whole site —
             // A-level badges, the marquee, the finding section's own "86" further down the
             // page — matcha green means exactly one thing everywhere it appears: disclosed.
-            // Leaving this row entirely grayscale broke that convention for no reason and
-            // made the row read as a generic stat bar; 488 stays neutral rather than getting
-            // a warning color of its own, because "silent" is not a verdict this site passes,
-            // just a count — the green is reserved for the one state the brand actually marks.
-            { n: verified, label: "say where",    variant: "accent" as const },
+            // 488 stays neutral dark rather than getting a warning color of its own, because
+            // "silent" is not a verdict this site passes, just a count — green is reserved
+            // for the one state the brand actually marks.
+            { n: verified, label: "say where",   variant: "accent" as const },
           ].map((s, i) => (
-            // Staggered left to right at 90ms so the four land in funnel order rather than
+            // Staggered left to right at 90ms so the three land in funnel order rather than
             // together — the drop from one figure to the next is the point.
             <motion.div
               key={s.label}
-              className="px-2 sm:px-7 text-center"
+              className="px-3 sm:px-9 text-center"
               initial={reduce ? false : { opacity: 0, y: 10 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.5, ease: EASE_OUT, delay: 1.1 + i * 0.09 }}
             >
-              {/* Muted pair stays a fixed, smaller scale and a lighter weight — they are
-                  context, not the payoff, so size, weight and color all agree they recede.
-                  The dark/accent pair keeps the dvh clamp from the height fix: 6dvh converges
-                  back to 60px once the viewport clears ~1000px tall, with a 36px floor.
-                  gray-400 read as "too light" because it was: 2.54:1 against white, under the
-                  4.5:1 floor for text this size — the same contrast mistake as the C/D header
-                  bug earlier in this session, just in a new spot nothing had checked yet.
-                  gray-600 (7.56:1) for the muted numbers keeps them unmistakably numbers and
-                  still visibly a step behind their neighbours; gray-500 (4.83:1) for every
-                  label matches what was already established for the dark pair's labels. */}
+              {/* Every number is full weight and full dark now — the dvh clamp from the
+                  height fix still applies: 6dvh converges back to 60px once the viewport
+                  clears ~1000px tall, with a 36px floor. */}
               <div
                 className={
-                  "font-display leading-none " +
-                  (s.variant === "muted"
-                    ? "text-2xl sm:text-4xl font-semibold text-gray-600"
-                    : "text-4xl sm:text-[length:clamp(2.25rem,6dvh,3.75rem)] font-bold "
-                      + (s.variant === "accent" ? "text-matcha-500" : "text-gray-900"))
+                  "font-display text-4xl sm:text-[length:clamp(2.25rem,6dvh,3.75rem)] font-bold leading-none "
+                  + (s.variant === "accent" ? "text-matcha-500" : "text-gray-900")
                 }
               >
                 <Counter value={s.n} immediate />
               </div>
-              <div className={"mt-2 text-gray-500 " + (s.variant === "muted" ? "text-[13px] sm:text-[15px]" : "text-[16px] sm:text-[18px]")}>
+              <div className="mt-2 text-[16px] sm:text-[18px] text-gray-500">
                 {s.label}
               </div>
             </motion.div>
