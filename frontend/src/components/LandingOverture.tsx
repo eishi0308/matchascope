@@ -499,13 +499,20 @@ function DisclosureStat({ stats }: { stats: Props["stats"] }) {
   // after the reader had already arrived.
   const { scrollYProgress } = useScroll({ target: ref, offset: ["start end", "end end"] });
 
-  // Same definition as the disclosure section further down the page: cafes that
-  // say anything about Japanese origin (A + B), over the cafes we could read.
-  // Two different figures for one fact would read as an error.
-  const named = (stats?.byLevel?.A ?? 86) + (stats?.byLevel?.B ?? 14);
-  const read  = stats?.assessable ?? 588;
-  const pct   = Math.round((named / read) * 100);
-  const share = named / read;
+  // This used to lead on a percentage ("17% of cafés we could read say their matcha is
+  // Japanese"), computed over the readable subset. Replaced with the two counting numbers
+  // directly — every cafe found, and how many actually say where it's from — because a
+  // percentage makes the reader do the division themselves, and 1,147 vs 86 is the finding
+  // stated, not summarised. The denominator question this invites ("why 588, not 1,147?")
+  // is the same one the hero funnel and the breakdown card already answer, so the caption
+  // below carries it in one line rather than repeating the full explanation a third time.
+  const total    = stats?.total ?? 1147;
+  const verified = stats?.byLevel?.A ?? 86;
+  const read     = stats?.assessable ?? 588;
+  // The arc still draws a real proportion, just a different one: 86 of 1,147, not the old
+  // 17% of 588. A ring drawn mostly dim with one thin lit sliver is the same "so few, out of
+  // so many" point the numbers make, so it survives the rewrite rather than being cut.
+  const share = verified / total;
 
   // Travel here is one section height, and the panel pins at ~0.93 of it
   // (measured). So the arc runs the length of the approach and completes just
@@ -553,17 +560,28 @@ function DisclosureStat({ stats }: { stats: Props["stats"] }) {
         </svg>
 
         <motion.div style={{ scale }} className="text-center px-5">
-          <div className="text-[16px] uppercase tracking-[0.2em] text-matcha-300 font-semibold mb-5">
+          <div className="text-[16px] uppercase tracking-[0.2em] text-matcha-300 font-semibold mb-5 sm:mb-7">
             The finding
           </div>
-          <div className="font-display font-bold leading-none text-white flex items-baseline justify-center"
-               style={{ fontSize: "clamp(5rem, 22vw, 16rem)" }}>
-            <Counter value={pct} />
-            <span className="text-matcha-400 ml-1" style={{ fontSize: "0.42em" }}>%</span>
-          </div>
-          <div className="font-display text-2xl sm:text-4xl text-white/90 mt-3 leading-snug">
-            of cafés we could read say
-            <br className="sm:hidden" /> their matcha is Japanese.
+          {/* Small and muted, next to large and lit — the same scale-contrast pairing as the
+              hero funnel, but this is the one place on the page the two numbers stand alone
+              with nothing else competing for the screen. 1,147 sits low enough not to fight
+              86 for the eye; 86 keeps most of the size budget the old percentage had. */}
+          <div className="flex items-baseline justify-center gap-5 sm:gap-10 flex-wrap">
+            <div>
+              <div className="font-display font-bold leading-none text-white/45"
+                   style={{ fontSize: "clamp(2.25rem, 9vw, 4.75rem)" }}>
+                <Counter value={total} immediate />
+              </div>
+              <div className="text-[15px] sm:text-[17px] text-white/45 mt-2">cafes found</div>
+            </div>
+            <div>
+              <div className="font-display font-bold leading-none text-matcha-400"
+                   style={{ fontSize: "clamp(4.5rem, 19vw, 10rem)" }}>
+                <Counter value={verified} />
+              </div>
+              <div className="text-[16px] sm:text-[19px] text-white font-semibold mt-2">say where it&rsquo;s from</div>
+            </div>
           </div>
         </motion.div>
 
@@ -571,10 +589,12 @@ function DisclosureStat({ stats }: { stats: Props["stats"] }) {
           style={{ y: copyY, opacity: copyOp }}
           className="mt-7 max-w-lg text-center text-[16px] leading-relaxed text-white/60 px-6"
         >
-          {/* "The full breakdown is below" was a stage direction: the breakdown is below,
-              visibly, and a line of copy spent pointing at the next scroll is a line not
-              spent on the finding. */}
-          Only {stats?.byLevel?.A ?? 86} of them name a region, farm or supplier.
+          {/* This used to be "Only 86 of them name a region, farm or supplier" — restating
+              the 86 that is now the headline number itself. What the reader needs here
+              instead is the same honest denominator note the hero and the breakdown card
+              both carry: 559 of the 1,147 were never read at all, so this isn't 86 out of
+              1,147 checked, it's 86 out of the 588 that could be. */}
+          Of the {read.toLocaleString()} cafés whose page could actually be read.
         </motion.p>
       </div>
     </section>
