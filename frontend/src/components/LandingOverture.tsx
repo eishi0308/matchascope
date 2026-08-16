@@ -387,18 +387,25 @@ function Hero({ stats }: { stats: Props["stats"] }) {
               {/* Muted pair stays a fixed, smaller scale — they are context, not the payoff,
                   so they should never be the biggest thing on the row even on a tall screen.
                   The dark pair keeps the dvh clamp from the height fix: 6dvh converges back
-                  to 60px once the viewport clears ~1000px tall, with a 36px floor. */}
+                  to 60px once the viewport clears ~1000px tall, with a 36px floor.
+                  gray-400 read as "too light" because it was: 2.54:1 against white, under the
+                  4.5:1 floor for text this size — the same contrast mistake as the C/D header
+                  bug earlier in this session, just in a new spot nothing had checked yet.
+                  gray-600 (7.56:1) for the number keeps it unmistakably a number and still
+                  visibly a step behind gray-900; gray-500 (4.83:1) for the label matches what
+                  every other label in this row already uses, so "muted" now means smaller and
+                  lower-contrast against its neighbour, not illegible. */}
               <div
                 className={
                   "font-display font-bold leading-none " +
                   (s.muted
-                    ? "text-2xl sm:text-4xl text-gray-400"
+                    ? "text-2xl sm:text-4xl text-gray-600"
                     : "text-4xl sm:text-[length:clamp(2.25rem,6dvh,3.75rem)] text-gray-900")
                 }
               >
                 <Counter value={s.n} immediate />
               </div>
-              <div className={"mt-2 " + (s.muted ? "text-[13px] sm:text-[15px] text-gray-400" : "text-[16px] sm:text-[18px] text-gray-500")}>
+              <div className={"mt-2 text-gray-500 " + (s.muted ? "text-[13px] sm:text-[15px]" : "text-[16px] sm:text-[18px]")}>
                 {s.label}
               </div>
             </motion.div>
