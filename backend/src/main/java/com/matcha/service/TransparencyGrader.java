@@ -599,22 +599,35 @@ public final class TransparencyGrader {
         for (String segment : SEGMENT_BOUNDARY.split(text)) {
             String s = segment.strip();
             if (s.isEmpty() || !MATCHA.matcher(s).find()) continue;
-            out.add(s.length() > MAX_PASSAGE ? tightenAroundMatcha(s) : s);
+            if (s.length() > MAX_PASSAGE) out.addAll(tightenAroundMatcha(s));
+            else out.add(s);
             if (out.size() >= 80) break;
         }
         return out;
     }
 
     /**
-     * Clamp an overlong passage to the text immediately surrounding its first matcha
-     * mention, so an origin word only counts when it sits beside the matcha claim.
+     * Clamp an overlong passage to windows around each matcha mention — every mention
+     * gets its own window, not just the first.
+     *
+     * <p>{@link #SEGMENT_BOUNDARY} splits on sentence punctuation, and a page with none
+     * (an Instagram bio: "OUJI | Matcha Cafe & Pop Up … we're using 1st harvest Uji
+     * matcha 🍵") stays a single run-on segment. Anchoring the one window to only the
+     * first "matcha" cut off exactly this case: the generic "Matcha Cafe" in the name
+     * sat ~190 characters before the real disclosure, outside a single ±150 window, so
+     * the sourcing statement was discarded before grading ever saw it. A separate window
+     * per mention lets {@link #findBestEvidence}'s existing "grade every candidate, keep
+     * the strongest" loop find the one that actually carries the claim.
      */
-    private static String tightenAroundMatcha(String passage) {
+    private static List<String> tightenAroundMatcha(String passage) {
+        List<String> windows = new java.util.ArrayList<>();
         var m = MATCHA.matcher(passage);
-        if (!m.find()) return passage.substring(0, MAX_PASSAGE);
-        int start = Math.max(0, m.start() - 150);
-        int end = Math.min(passage.length(), m.end() + 150);
-        return passage.substring(start, end).strip();
+        while (m.find() && windows.size() < 5) {
+            int start = Math.max(0, m.start() - 150);
+            int end = Math.min(passage.length(), m.end() + 150);
+            windows.add(passage.substring(start, end).strip());
+        }
+        return windows.isEmpty() ? List.of(passage.substring(0, MAX_PASSAGE)) : windows;
     }
 
     /**
