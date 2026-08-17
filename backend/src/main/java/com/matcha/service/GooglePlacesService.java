@@ -33,7 +33,8 @@ public class GooglePlacesService {
     private static final String SEARCH_URL = "https://places.googleapis.com/v1/places:searchText";
     private static final String FIELD_MASK  =
             "places.id,places.displayName,places.formattedAddress," +
-            "places.location,places.websiteUri,places.types,places.rating";
+            "places.location,places.websiteUri,places.types,places.rating,places.photos.name";
+    private static final String PHOTO_MEDIA_URL = "https://places.googleapis.com/v1/%s/media";
 
     private final HttpClient    httpClient    = HttpClient.newBuilder().connectTimeout(Duration.ofSeconds(30)).build();
     private final ObjectMapper  objectMapper  = new ObjectMapper();
@@ -46,7 +47,8 @@ public class GooglePlacesService {
             Double lat,
             Double lng,
             String suburb,
-            String address
+            String address,
+            List<String> photoNames  // resource names, e.g. "places/{id}/photos/{ref}" — never null, may be empty
     ) {}
 
     // Key suburbs to search per city for maximum coverage
@@ -243,8 +245,106 @@ public class GooglePlacesService {
             String website = place.has("websiteUri")       ? place.get("websiteUri").asText()       : null;
             String suburb  = extractSuburb(address);
 
-            return new PlaceInfo(id, name, website, null, lat, lng, suburb, address);
+            List<String> photoNames = new ArrayList<>();
+            if (place.has("photos") && place.get("photos").isArray()) {
+                for (JsonNode photo : place.get("photos")) {
+                    if (photo.has("name")) photoNames.add(photo.get("name").asText());
+                }
+            }
+
+            return new PlaceInfo(id, name, website, null, lat, lng, suburb, address, photoNames);
         } catch (Exception e) {
+            return null;
+        }
+    }
+
+    /**
+     * Recover a single place's id and photos by name/location — for cafes stored before
+     * {@code googleId} was captured on discovery. Issues exactly one Text Search request (no
+     * pagination, no suburb fan-out) at Google's standard price; unlike {@link #fetchPhotoUri}
+     * this is not covered by {@link ApiBudgetGuard}'s free-tier ceiling.
+     *
+     * @return the best-matching place, or null if the lookup found or fetched nothing
+     */
+    public PlaceInfo findPlaceByNameAndAddress(String name, String address, Double lat, Double lng) {
+        if (apiKey == null || apiKey.isBlank()) return null;
+        try {
+            String query = (address != null && !address.isBlank()) ? name + ", " + address : name;
+
+            ObjectNode body = objectMapper.createObjectNode();
+            body.put("textQuery", query);
+            body.put("maxResultCount", 1);
+            body.put("languageCode", "en");
+            if (lat != null && lng != null) {
+                ObjectNode locationBias = body.putObject("locationBias");
+                ObjectNode circle       = locationBias.putObject("circle");
+                ObjectNode center       = circle.putObject("center");
+                center.put("latitude",  lat);
+                center.put("longitude", lng);
+                circle.put("radius", 2000.0); // tight — this cafe is already known, not being discovered
+            }
+
+            HttpRequest request = HttpRequest.newBuilder()
+                    .uri(URI.create(SEARCH_URL))
+                    .header("Content-Type",   "application/json")
+                    .header("X-Goog-Api-Key", apiKey)
+                    .header("X-Goog-FieldMask", FIELD_MASK)
+                    .timeout(Duration.ofSeconds(30))
+                    .POST(HttpRequest.BodyPublishers.ofString(objectMapper.writeValueAsString(body)))
+                    .build();
+
+            HttpResponse<String> response = httpClient.send(request, HttpResponse.BodyHandlers.ofString());
+            if (response.statusCode() != 200) {
+                System.err.printf("[GooglePlaces] Lookup error %d for \"%s\": %s%n", response.statusCode(), query, response.body());
+                return null;
+            }
+
+            JsonNode root   = objectMapper.readTree(response.body());
+            JsonNode places = root.get("places");
+            if (places == null || !places.isArray() || places.isEmpty()) return null;
+
+            return parsePlaceInfo(places.get(0));
+        } catch (Exception e) {
+            System.err.printf("[GooglePlaces] Lookup failed for \"%s\": %s%n", name, e.getMessage());
+            return null;
+        }
+    }
+
+    /**
+     * Resolve one photo resource name (from {@link PlaceInfo#photoNames()}) to a short-lived
+     * CDN image URL. Billed as a single "Place Photos" request — call {@code
+     * ApiBudgetGuard.tryConsumePlacesPhotoRequest()} before this, not after.
+     *
+     * <p>{@code skipHttpRedirect=true} asks for JSON ({@code {"photoUri": "..."}}) instead of
+     * a 302 straight to the image, so the returned URL can be handed to a caller (e.g. OpenAI's
+     * {@code image_url}) without this service downloading the image bytes itself.
+     *
+     * @return the CDN {@code photoUri}, or null on any failure
+     */
+    public String fetchPhotoUri(String photoResourceName, int maxWidthPx) {
+        if (apiKey == null || apiKey.isBlank()) return null;
+        try {
+            String url = String.format(PHOTO_MEDIA_URL, photoResourceName)
+                    + "?skipHttpRedirect=true&maxWidthPx=" + maxWidthPx
+                    + "&key=" + apiKey;
+
+            HttpRequest request = HttpRequest.newBuilder()
+                    .uri(URI.create(url))
+                    .timeout(Duration.ofSeconds(30))
+                    .GET()
+                    .build();
+
+            HttpResponse<String> response = httpClient.send(request, HttpResponse.BodyHandlers.ofString());
+            if (response.statusCode() != 200) {
+                System.err.printf("[GooglePlaces] Photo media error %d for %s: %s%n",
+                        response.statusCode(), photoResourceName, response.body());
+                return null;
+            }
+
+            JsonNode root = objectMapper.readTree(response.body());
+            return root.has("photoUri") ? root.get("photoUri").asText() : null;
+        } catch (Exception e) {
+            System.err.printf("[GooglePlaces] Photo media fetch failed for %s: %s%n", photoResourceName, e.getMessage());
             return null;
         }
     }

@@ -28,3 +28,17 @@ openai.api.key=YOUR_OPENAI_API_KEY
 schedule.discovery.enabled=false
 # Cron: every Sunday at 02:00
 schedule.discovery.cron=0 0 2 * * SUN
+
+# ── Menu Photo Verification ────────────────────────────────────────────────────
+# When a discovered cafe has no scrapable website/Instagram content, check its
+# Google Maps photos for a menu disclosing matcha sourcing before grading it Level D.
+photoverify.enabled=false
+# Photos checked per cafe before giving up (early-stops on the first disclosure found)
+photoverify.maxPhotosPerCafe=4
+photoverify.photoMaxWidthPx=1024
+# Safety margin under Google's 1,000/month free "Place Photos" requests
+photoverify.places.freeTierCeiling=950
+# Estimated OpenAI vision spend ceiling per month (gpt-4o-mini)
+photoverify.openai.dollarCeiling=5.00
+# Log a checkpoint (used/remaining) every N requests on each meter
+photoverify.checkpointEvery=50
