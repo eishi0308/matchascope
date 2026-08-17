@@ -32,6 +32,9 @@ public class CafeService {
     private MenuPhotoVerifier menuPhotoVerifier;
 
     @Autowired
+    private WebsiteImageVerifier websiteImageVerifier;
+
+    @Autowired
     private ApiBudgetGuard budgetGuard;
 
     @Value("${google.places.api.key:}")
@@ -482,7 +485,7 @@ public class CafeService {
 
             String url = content.startUrl();
             ScraperService.ScrapeResult scraped =
-                    new ScraperService.ScrapeResult(content.text(), content.pageTexts());
+                    new ScraperService.ScrapeResult(content.text(), content.pageTexts(), List.of());
 
             // Both channels, for every row. A cafe demoted to C had its quote cleared, so
             // without this the C set would be judged on the page scan alone while the B set
@@ -775,6 +778,127 @@ public class CafeService {
         System.out.printf("[PhotoBackfill] Done. found=%d noEvidence=%d notFound=%d (dryRun=%b)%n",
                 found, noEvidence, notFound, options.dryRun());
         return summary;
+    }
+
+    public record WebsiteImageBackfillOptions(boolean dryRun, int limit, int offset, String resumeFrom) {}
+
+    /**
+     * Re-checks Level C cafes that DO have a reachable website — the opposite pool from
+     * {@link #backfillPhotoVerification}, which targets cafes with no reachable content at
+     * all. Some sites put their sourcing story in a banner or brand-story graphic instead
+     * of real text, which {@link ScraperService}'s text-only scrape never sees. Re-scrapes
+     * each cafe (free — the same request the text scraper already makes) and checks any
+     * images the page carries via {@link WebsiteImageVerifier}.
+     *
+     * <p>Defaults to a dry run and is journaled the same way {@link #regrade} is.
+     */
+    public Map<String, Object> backfillWebsiteImages(WebsiteImageBackfillOptions options) {
+        List<Cafe> candidates = cafeRepository.findAll().stream()
+                .filter(c -> c.getLevel() == TransparencyLevel.C)
+                .filter(c -> !cannotBeRead(c))
+                .sorted(Comparator.comparing(Cafe::getId))
+                .collect(java.util.stream.Collectors.toCollection(ArrayList::new));
+
+        int pool = candidates.size();
+        Set<String> alreadyDone = readJournalIds(options.resumeFrom());
+        if (!alreadyDone.isEmpty()) candidates.removeIf(c -> alreadyDone.contains(c.getId()));
+
+        List<Cafe> targets = candidates.stream()
+                .skip(Math.max(0, options.offset()))
+                .limit(options.limit() > 0 ? options.limit() : Long.MAX_VALUE)
+                .toList();
+
+        System.out.printf("[ImageBackfill] selected %d of %d reachable Level C cafes (dryRun=%b)%n",
+                targets.size(), pool, options.dryRun());
+
+        java.io.PrintWriter journal = openImageBackfillJournal(options);
+        int found = 0, noImages = 0, noEvidence = 0, unreachable = 0;
+        String verifiedDate = LocalDate.now().format(DateTimeFormatter.ofPattern("MMMM yyyy"));
+
+        try {
+            for (Cafe cafe : targets) {
+                String website = cafe.getWebsite();
+                if (website == null || website.isBlank()) {
+                    writeBackfillRow(journal, cafe, "UNREACHABLE", null);
+                    unreachable++;
+                    continue;
+                }
+
+                ScraperService.ScrapeResult scraped;
+                try {
+                    scraped = scraperService.scrapeWithTracking(withScheme(website));
+                } catch (Exception e) {
+                    writeBackfillRow(journal, cafe, "UNREACHABLE", e.getMessage());
+                    unreachable++;
+                    continue;
+                }
+
+                if (scraped == null || scraped.imageUrls().isEmpty()) {
+                    writeBackfillRow(journal, cafe, "NO-IMAGES", null);
+                    noImages++;
+                    sleep(500);
+                    continue;
+                }
+
+                WebsiteImageVerifier.ImageEvidence evidence =
+                        websiteImageVerifier.verify(scraped.imageUrls()).orElse(null);
+
+                if (evidence == null) {
+                    writeBackfillRow(journal, cafe, "NO-EVIDENCE", null);
+                    noEvidence++;
+                    sleep(500);
+                    continue;
+                }
+
+                System.out.printf("[ImageBackfill] → '%s': %s → %s from a website image%n",
+                        cafe.getName(), cafe.getLevel(), evidence.level());
+                writeBackfillRow(journal, cafe, "FOUND", evidence.level().name() + ": " + evidence.quote());
+                found++;
+
+                if (!options.dryRun()) {
+                    cafe.setLevel(evidence.level());
+                    cafe.setEvidenceQuote(evidence.quote());
+                    String src = evidence.imageUrl();
+                    cafe.setEvidenceSource(src.length() > 250 ? src.substring(0, 250) : src);
+                    cafe.setEvidenceSourceLabel("Website Image");
+                    cafe.setEvidenceVerifiedDate(verifiedDate);
+                    cafe.setCoverColor(coverColorForLevel(evidence.level().name()));
+                    cafeRepository.save(cafe);
+                }
+                sleep(500);
+            }
+        } finally {
+            if (journal != null) journal.close();
+        }
+
+        Map<String, Object> summary = new LinkedHashMap<>();
+        summary.put("pool", pool);
+        summary.put("selected", targets.size());
+        summary.put("found", found);
+        summary.put("noEvidence", noEvidence);
+        summary.put("noImages", noImages);
+        summary.put("unreachable", unreachable);
+        summary.put("dryRun", options.dryRun());
+        summary.put("usage", budgetGuard.snapshot());
+        System.out.printf("[ImageBackfill] Done. found=%d noEvidence=%d noImages=%d unreachable=%d (dryRun=%b)%n",
+                found, noEvidence, noImages, unreachable, options.dryRun());
+        return summary;
+    }
+
+    private java.io.PrintWriter openImageBackfillJournal(WebsiteImageBackfillOptions options) {
+        try {
+            java.nio.file.Path dir = java.nio.file.Path.of("data", "regrade-runs");
+            java.nio.file.Files.createDirectories(dir);
+            String stamp = LocalDate.now() + "-" + System.currentTimeMillis();
+            java.nio.file.Path file = dir.resolve(
+                    "image-backfill-" + (options.dryRun() ? "dry" : "applied") + "-" + stamp + ".jsonl");
+            var writer = new java.io.PrintWriter(java.nio.file.Files.newBufferedWriter(file), true);
+            System.out.printf("[ImageBackfill] journal: %s%n", file);
+            return writer;
+        } catch (Exception e) {
+            System.out.printf("[ImageBackfill] journal unavailable (%s) — continuing without one%n", e.getMessage());
+            return null;
+        }
     }
 
     private java.io.PrintWriter openBackfillJournal(PhotoBackfillOptions options) {

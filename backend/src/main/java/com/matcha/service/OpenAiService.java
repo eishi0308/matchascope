@@ -37,6 +37,9 @@ public class OpenAiService {
     /** @param isMenu true if the photo shows a legible menu/price board; ocrText is null when false. */
     public record PhotoOcrResult(boolean isMenu, String ocrText) {}
 
+    /** @param hasText true if the image has legible text worth reading; ocrText is null when false. */
+    public record ImageOcrResult(boolean hasText, String ocrText) {}
+
     /**
      * Send scraped website content to GPT-4o and get a structured matcha transparency analysis.
      */
@@ -98,9 +101,64 @@ public class OpenAiService {
      * @param photoUri a public HTTPS image URL, e.g. from {@link GooglePlacesService#fetchPhotoUri}
      */
     public PhotoOcrResult classifyAndOcrMenuPhoto(String photoUri) {
+        JsonNode result = runVisionOcr(photoUri, """
+                Is this photo a menu, price list, or price board with legible text
+                (printed, handwritten, or a chalkboard)? A photo of food, drinks, decor,
+                or people is NOT a menu.
+
+                Respond with ONLY valid JSON — no explanation, no markdown:
+                {
+                  "isMenu": true,
+                  "ocrText": "every word of text visible on the menu, transcribed verbatim, or null"
+                }
+
+                CRITICAL: ocrText must be a literal, word-for-word transcription of what is
+                printed in the image. Do not paraphrase, summarize, translate, or add words
+                that are not visibly in the photo. If any word is unclear, omit it rather
+                than guess. If isMenu is false, ocrText must be null.
+                """);
+        if (result == null) return new PhotoOcrResult(false, null);
+
+        boolean isMenu = result.has("isMenu") && result.get("isMenu").asBoolean();
+        String ocrText = getStringOrNull(result, "ocrText");
+        return new PhotoOcrResult(isMenu && ocrText != null, isMenu ? ocrText : null);
+    }
+
+    /**
+     * Classify an image found on a cafe's own website (a banner, brand-story graphic,
+     * ingredient callout, certificate) and transcribe any legible text. Same anti-
+     * hallucination shape as {@link #classifyAndOcrMenuPhoto}: this only transcribes,
+     * grading is still {@link TransparencyGrader#findBestEvidence(String)} on the result.
+     */
+    public ImageOcrResult classifyAndOcrWebsiteImage(String imageUrl) {
+        JsonNode result = runVisionOcr(imageUrl, """
+                Does this image contain legible text — a brand-story graphic, an ingredient
+                or sourcing callout, a certificate or label, packaging copy? A plain product
+                photo, food/drink shot, decor, or logo with no other text does NOT count.
+
+                Respond with ONLY valid JSON — no explanation, no markdown:
+                {
+                  "hasText": true,
+                  "ocrText": "every word of the relevant text, transcribed verbatim, or null"
+                }
+
+                CRITICAL: ocrText must be a literal, word-for-word transcription of what is
+                printed in the image. Do not paraphrase, summarize, translate, or add words
+                that are not visibly in the image. If any word is unclear, omit it rather
+                than guess. If hasText is false, ocrText must be null.
+                """);
+        if (result == null) return new ImageOcrResult(false, null);
+
+        boolean hasText = result.has("hasText") && result.get("hasText").asBoolean();
+        String ocrText = getStringOrNull(result, "ocrText");
+        return new ImageOcrResult(hasText && ocrText != null, hasText ? ocrText : null);
+    }
+
+    /** Shared HTTP/parsing plumbing for a single-image vision call. Null on any failure. */
+    private JsonNode runVisionOcr(String imageUrl, String prompt) {
         if (apiKey == null || apiKey.isBlank()) {
-            System.out.println("[OpenAI] No API key set — skipping photo OCR.");
-            return new PhotoOcrResult(false, null);
+            System.out.println("[OpenAI] No API key set — skipping image OCR.");
+            return null;
         }
 
         try {
@@ -115,26 +173,11 @@ public class OpenAiService {
             ArrayNode contentParts = message.putArray("content");
             ObjectNode textPart = contentParts.addObject();
             textPart.put("type", "text");
-            textPart.put("text", """
-                    Is this photo a menu, price list, or price board with legible text
-                    (printed, handwritten, or a chalkboard)? A photo of food, drinks, decor,
-                    or people is NOT a menu.
-
-                    Respond with ONLY valid JSON — no explanation, no markdown:
-                    {
-                      "isMenu": true,
-                      "ocrText": "every word of text visible on the menu, transcribed verbatim, or null"
-                    }
-
-                    CRITICAL: ocrText must be a literal, word-for-word transcription of what is
-                    printed in the image. Do not paraphrase, summarize, translate, or add words
-                    that are not visibly in the photo. If any word is unclear, omit it rather
-                    than guess. If isMenu is false, ocrText must be null.
-                    """);
+            textPart.put("text", prompt);
 
             ObjectNode imagePart = contentParts.addObject();
             imagePart.put("type", "image_url");
-            imagePart.putObject("image_url").put("url", photoUri);
+            imagePart.putObject("image_url").put("url", imageUrl);
 
             HttpRequest request = HttpRequest.newBuilder()
                     .uri(URI.create("https://api.openai.com/v1/chat/completions"))
@@ -148,7 +191,7 @@ public class OpenAiService {
 
             if (response.statusCode() != 200) {
                 System.err.printf("[OpenAI] Vision API error %d: %s%n", response.statusCode(), response.body());
-                return new PhotoOcrResult(false, null);
+                return null;
             }
 
             JsonNode responseNode = objectMapper.readTree(response.body());
@@ -156,17 +199,13 @@ public class OpenAiService {
 
             int start = text.indexOf('{');
             int end   = text.lastIndexOf('}') + 1;
-            if (start == -1 || end == 0) return new PhotoOcrResult(false, null);
+            if (start == -1 || end == 0) return null;
 
-            JsonNode result = objectMapper.readTree(text.substring(start, end));
-            boolean isMenu = result.has("isMenu") && result.get("isMenu").asBoolean();
-            String ocrText = getStringOrNull(result, "ocrText");
-
-            return new PhotoOcrResult(isMenu && ocrText != null, isMenu ? ocrText : null);
+            return objectMapper.readTree(text.substring(start, end));
 
         } catch (Exception e) {
-            System.err.printf("[OpenAI] Error OCR'ing photo: %s%n", e.getMessage());
-            return new PhotoOcrResult(false, null);
+            System.err.printf("[OpenAI] Error OCR'ing image: %s%n", e.getMessage());
+            return null;
         }
     }
 

@@ -151,6 +151,24 @@ public class CafeController {
     }
 
     /**
+     * POST /api/cafes/backfill-website-images?dryRun=true&amp;limit=50&amp;offset=0&amp;resumeFrom=...
+     *
+     * Re-checks Level C cafes that DO have a reachable website for a sourcing disclosure
+     * hiding in an image (banner, brand-story graphic) rather than in text. Free to
+     * re-scrape; only the vision check is metered. Defaults to a dry run.
+     */
+    @PostMapping("/backfill-website-images")
+    public ResponseEntity<Map<String, Object>> backfillWebsiteImages(
+            @RequestParam(defaultValue = "true") boolean dryRun,
+            @RequestParam(defaultValue = "0") int limit,
+            @RequestParam(defaultValue = "0") int offset,
+            @RequestParam(required = false) String resumeFrom
+    ) {
+        return ResponseEntity.ok(cafeService.backfillWebsiteImages(
+                new CafeService.WebsiteImageBackfillOptions(dryRun, limit, offset, resumeFrom)));
+    }
+
+    /**
      * GET /api/cafes/photo-verify-usage
      * Read-only: how much of the free/budget ceiling the menu-photo verification pipeline
      * has spent this month, and how much remains.

@@ -36,6 +36,9 @@ photoverify.enabled=false
 # Photos checked per cafe before giving up (early-stops on the first disclosure found)
 photoverify.maxPhotosPerCafe=4
 photoverify.photoMaxWidthPx=1024
+# Website images checked per cafe (backfill-website-images) — free to fetch, only the
+# vision call is metered, shared with the Places-photo OpenAI ceiling below
+photoverify.maxImagesPerCafe=6
 # Safety margin under Google's 1,000/month free "Place Photos" requests
 photoverify.places.freeTierCeiling=950
 # Estimated OpenAI vision spend ceiling per month (gpt-4o-mini)
