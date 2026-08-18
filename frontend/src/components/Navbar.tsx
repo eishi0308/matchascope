@@ -3,14 +3,16 @@
 import { useState, useEffect } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Map, Info, ChevronRight, Menu, X } from "lucide-react";
+import { Map, Info, Heart, ChevronRight, Menu, X } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import AuthModal from "./AuthModal";
 import MatchaMark from "./MatchaMark";
+import { useFavoriteIds } from "@/lib/favorites";
 
 const NAV_LINKS = [
-  { href: "/map",           icon: Map,  label: "Explore Map" },
-  { href: "/#how-it-works", icon: Info, label: "How it Works" },
+  { href: "/map",           icon: Map,   label: "Explore Map" },
+  { href: "/saved",         icon: Heart, label: "Saved" },
+  { href: "/#how-it-works", icon: Info,  label: "How it Works" },
 ];
 
 const EASE = [0.25, 0.46, 0.45, 0.94] as const;
@@ -22,6 +24,7 @@ export default function Navbar() {
   const [mobileMenuOpen,  setMobileMenuOpen]  = useState(false);
   const pathname = usePathname();
   const isMap = pathname === "/map";
+  const savedCount = useFavoriteIds().size;
 
   useEffect(() => {
     const onScroll = () => setScrolled(window.scrollY > 20);
@@ -90,6 +93,14 @@ export default function Navbar() {
                   style={{ color: light ? "rgba(255,255,255,0.85)" : "#374151" }}
                 >
                   <Icon size={15} />{label}
+                  {href === "/saved" && savedCount > 0 && (
+                    <span
+                      className="flex items-center justify-center min-w-[16px] h-[16px] px-1 rounded-full font-semibold leading-none"
+                      style={{ background: "#dc2626", color: "#fff", fontSize: "10px" }}
+                    >
+                      {savedCount}
+                    </span>
+                  )}
                 </Link>
                 <motion.span
                   className="absolute bottom-0 left-0 h-[1.5px] rounded-full"
@@ -181,6 +192,14 @@ export default function Navbar() {
                   >
                     <Icon size={16} className="text-matcha-600" />
                     {label}
+                    {href === "/saved" && savedCount > 0 && (
+                      <span
+                        className="flex items-center justify-center min-w-[18px] h-[18px] px-1 rounded-full font-semibold leading-none"
+                        style={{ background: "#dc2626", color: "#fff", fontSize: "11px" }}
+                      >
+                        {savedCount}
+                      </span>
+                    )}
                   </Link>
                 ))}
               </div>

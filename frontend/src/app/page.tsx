@@ -17,6 +17,7 @@ import {
 } from "lucide-react";
 import Navbar from "@/components/Navbar";
 import AuthModal from "@/components/AuthModal";
+import SuggestModal from "@/components/SuggestModal";
 import MatchaMark from "@/components/MatchaMark";
 import LandingOverture, { LandingProof } from "@/components/LandingOverture";
 import { fetchCafes, fetchStats } from "@/lib/api";
@@ -1039,6 +1040,7 @@ function SectionLabel({ icon: Icon, text }: { icon: React.ElementType; text: str
 
 export default function HomePage() {
   const [authOpen, setAuthOpen] = useState(false);
+  const [suggestOpen, setSuggestOpen] = useState(false);
   const [disclosure, setDisclosure] = useState(DEFAULT_DISCLOSURE);
   // Live figures for the overture that plays above the original page
   const [overtureStats, setOvertureStats] = useState<OvertureStats>(null);
@@ -1575,7 +1577,7 @@ export default function HomePage() {
                     <Map size={16} />Open the Map
                   </Link>
                 </motion.div>
-                <motion.button onClick={() => setAuthOpen(true)}
+                <motion.button onClick={() => setSuggestOpen(true)}
                   className="inline-flex items-center gap-2.5 px-8 py-4 rounded-full font-semibold text-[16px] border"
                   style={{ color: "rgba(255,255,255,0.72)", borderColor: "rgba(255,255,255,0.14)", background: "rgba(255,255,255,0.05)" }}
                   whileHover={{ scale: 1.05, borderColor: "rgba(255,255,255,0.3)", color: "rgba(255,255,255,0.95)" } as any}
@@ -1606,6 +1608,7 @@ export default function HomePage() {
       </footer>
 
       <AuthModal isOpen={authOpen} onClose={() => setAuthOpen(false)} defaultTab="signup" />
+      <SuggestModal isOpen={suggestOpen} onClose={() => setSuggestOpen(false)} />
     </div>
   );
 }
