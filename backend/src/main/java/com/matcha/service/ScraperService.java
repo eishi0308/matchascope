@@ -6,6 +6,7 @@ import org.jsoup.nodes.Element;
 import org.springframework.stereotype.Service;
 
 import java.net.URI;
+import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
@@ -79,8 +80,8 @@ public class ScraperService {
 
     // ── Public API ─────────────────────────────────────────────────────────────
 
-    /** Result of scrapeWithTracking — combined text plus per-page breakdown. */
-    public record ScrapeResult(String combinedText, Map<String, String> pageTexts) {}
+    /** Result of scrapeWithTracking — combined text, per-page breakdown, and image URLs found. */
+    public record ScrapeResult(String combinedText, Map<String, String> pageTexts, List<String> imageUrls) {}
 
     /**
      * Same as scrape() but also returns a map of {pageUrl → pageText} so callers
@@ -96,6 +97,10 @@ public class ScraperService {
         // unreachable, so the crawler could only ever follow links embedded in body copy.
         List<String> subpageUrls = findContentSubpages(homepage, url);
 
+        // Images are collected before chrome is stripped too — a "sourcing" banner image
+        // sits in the same header/about markup a text quote would.
+        List<String> imageUrls = new LinkedHashSet<>(findContentImages(homepage)).stream().toList();
+
         homepage.select("script, style, nav, footer, header, noscript, iframe, svg").remove();
         String homeText = homepage.body().text();
 
@@ -103,21 +108,26 @@ public class ScraperService {
         pageTexts.put(url, homeText);
 
         int scraped = 0;
+        List<String> subImages = new ArrayList<>();
         for (String subUrl : subpageUrls) {
             if (scraped >= MAX_SUBPAGES) break;
             Document subDoc = fetchDocument(subUrl);
             if (subDoc == null) continue;
+            subImages.addAll(findContentImages(subDoc));
             subDoc.select("script, style, nav, footer, header, noscript, iframe, svg").remove();
             pageTexts.put(subUrl, subDoc.body().text());
             scraped++;
             sleep(500);
         }
 
+        List<String> allImages = new ArrayList<>(imageUrls);
+        for (String img : subImages) if (!allImages.contains(img)) allImages.add(img);
+
         StringBuilder combined = new StringBuilder();
         pageTexts.values().forEach(t -> combined.append(t).append(" "));
         String text = combined.toString().replaceAll("\\s+", " ").strip();
 
-        return new ScrapeResult(trimToBudget(text), pageTexts);
+        return new ScrapeResult(trimToBudget(text), pageTexts, allImages);
     }
 
     /**
@@ -300,6 +310,46 @@ public class ScraperService {
                 .sorted(Map.Entry.<String, Integer>comparingByValue(Comparator.reverseOrder()))
                 .map(Map.Entry::getKey)
                 .toList();
+    }
+
+    /**
+     * Filenames that are never a sourcing statement — logos, icons, spinners, tracking
+     * pixels. Vision-OCRing every image on a page would mostly pay to be told a favicon
+     * has no text in it.
+     */
+    private static final Pattern JUNK_IMAGE = Pattern.compile(
+            "logo|icon|favicon|sprite|pixel|avatar|badge|spinner|loader|placeholder|" +
+            "\\.svg(?:\\?|$)|payment|visa|mastercard|paypal|klarna",
+            Pattern.CASE_INSENSITIVE);
+
+    private static final int MAX_IMAGES_PER_PAGE = 8;
+
+    /**
+     * Candidate image URLs on a page — banner/story graphics, ingredient callouts,
+     * certificates — the kind of thing a brand sometimes says in a picture instead of in
+     * text the rest of this class already reads. Checks {@code data-src} and similar
+     * lazy-load attributes too: a static fetch never runs the JavaScript that would swap
+     * a real image in for a placeholder, so {@code src} alone under-reports what a visitor
+     * actually sees.
+     */
+    private List<String> findContentImages(Document doc) {
+        List<String> found = new ArrayList<>();
+        for (Element img : doc.select("img")) {
+            if (found.size() >= MAX_IMAGES_PER_PAGE) break;
+            String src = firstNonBlank(img, "src", "data-src", "data-lazy-src", "data-original");
+            if (src == null || src.isBlank() || !src.startsWith("http")) continue;
+            if (JUNK_IMAGE.matcher(src).find()) continue;
+            if (!found.contains(src)) found.add(src);
+        }
+        return found;
+    }
+
+    private String firstNonBlank(Element el, String... attrs) {
+        for (String attr : attrs) {
+            String v = el.absUrl(attr);
+            if (v != null && !v.isBlank()) return v;
+        }
+        return null;
     }
 
     /**

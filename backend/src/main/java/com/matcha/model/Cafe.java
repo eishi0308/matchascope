@@ -9,6 +9,12 @@ public class Cafe {
     @Id
     private String id;
     private String name;
+
+    // Google Places place id ("googleId" to avoid clashing with the entity's own @Id).
+    // Not used for grading — captured so a future backfill pass (re-checking cafes
+    // that predate photo verification) doesn't need to re-search Places to find them.
+    private String googleId;
+
     private String city;
     private String suburb;
     private String address;
@@ -51,6 +57,9 @@ public class Cafe {
 
     public String getName() { return name; }
     public void setName(String name) { this.name = name; }
+
+    public String getGoogleId() { return googleId; }
+    public void setGoogleId(String googleId) { this.googleId = googleId; }
 
     public String getCity() { return city; }
     public void setCity(String city) { this.city = city; }

@@ -28,12 +28,29 @@ public class CafeService {
     @Autowired
     private OpenAiService openAiService;
 
+    @Autowired
+    private MenuPhotoVerifier menuPhotoVerifier;
+
+    @Autowired
+    private WebsiteImageVerifier websiteImageVerifier;
+
+    @Autowired
+    private ApiBudgetGuard budgetGuard;
+
     @Value("${google.places.api.key:}")
     private String googlePlacesApiKey;
+
+    @Value("${photoverify.enabled:false}")
+    private boolean photoVerifyEnabled;
 
     private volatile boolean discovering = false;
 
     public boolean isDiscovering() { return discovering; }
+
+    /** Used/ceiling/remaining for the two APIs {@link MenuPhotoVerifier} spends against. */
+    public ApiBudgetGuard.UsageSnapshot getPhotoVerifyUsage() {
+        return budgetGuard.snapshot();
+    }
 
     // ── Startup ───────────────────────────────────────────────────────────────
 
@@ -165,6 +182,20 @@ public class CafeService {
                     analysis = openAiService.analyze(place.name(), place.website(), content);
                 }
 
+                // Nothing was read from a website or Instagram — before this cafe falls to
+                // Level D, check whether its own Google Maps listing has a menu photo that
+                // discloses sourcing. Most cafes with no scrapable content have no web
+                // presence beyond that listing at all. Graded through the exact same gate
+                // as the website path (TransparencyGrader.findBestEvidence).
+                MenuPhotoVerifier.PhotoEvidence photoEvidence = null;
+                if (content.isBlank() && photoVerifyEnabled) {
+                    photoEvidence = menuPhotoVerifier.verify(place).orElse(null);
+                    if (photoEvidence != null) {
+                        System.out.printf("[Discovery] → Found sourcing evidence in a Google Maps photo (Level %s)%n",
+                                photoEvidence.level());
+                    }
+                }
+
                 // Find which specific page the quote was found on
                 String exactSourceUrl = findQuoteSourcePage(analysis, scrapeResult);
 
@@ -176,7 +207,7 @@ public class CafeService {
 
                 System.out.printf("[Discovery] → Matcha confirmed! Saving...%n");
 
-                Cafe cafe = buildDiscoveredCafe(place, city.name(), analysis, verifiedDate, exactSourceUrl, content, scrapeResult);
+                Cafe cafe = buildDiscoveredCafe(place, city.name(), analysis, verifiedDate, exactSourceUrl, content, scrapeResult, photoEvidence);
                 cafeRepository.save(cafe);
                 discovered++;
                 System.out.printf("[Discovery] → Saved '%s' as Level %s%n", place.name(), cafe.getLevel());
@@ -187,17 +218,26 @@ public class CafeService {
             sleep(3000); // pause between cities
         }
 
+        if (photoVerifyEnabled) {
+            ApiBudgetGuard.UsageSnapshot usage = budgetGuard.snapshot();
+            System.out.printf("[PhotoVerify] Run summary — Places: %d/%d free requests used (%d remaining). "
+                            + "OpenAI vision: $%.4f / $%.2f ceiling spent.%n",
+                    usage.placesUsed(), usage.placesCeiling(), usage.placesCeiling() - usage.placesUsed(),
+                    usage.openAiSpent(), usage.openAiDollarCeiling());
+        }
+
         System.out.printf("[Discovery] Done. Discovered %d new cafes.%n", discovered);
         return discovered;
     }
 
-    private Cafe buildDiscoveredCafe(GooglePlacesService.PlaceInfo place, String city, OpenAiService.CafeAnalysis analysis, String verifiedDate, String exactSourceUrl, String scrapedContent, ScraperService.ScrapeResult scrapeResult) {
+    private Cafe buildDiscoveredCafe(GooglePlacesService.PlaceInfo place, String city, OpenAiService.CafeAnalysis analysis, String verifiedDate, String exactSourceUrl, String scrapedContent, ScraperService.ScrapeResult scrapeResult, MenuPhotoVerifier.PhotoEvidence photoEvidence) {
         long count = cafeRepository.count();
         String prefix = city.substring(0, 3).toLowerCase();
         String id = prefix + "-disc-" + String.format("%03d", count + 1);
 
         Cafe cafe = new Cafe();
         cafe.setId(id);
+        cafe.setGoogleId(place.googleId());
         cafe.setName(place.name());
         cafe.setCity(city);
         cafe.setSuburb(place.suburb() != null ? place.suburb() : "");
@@ -237,6 +277,23 @@ public class CafeService {
                 cafe.setTagline("");
                 cafe.setDescription("");
             }
+        } else if (photoEvidence != null) {
+            // Nothing was scraped, but a photo on the cafe's own Google Maps listing shows a
+            // menu that discloses sourcing — found and graded by MenuPhotoVerifier through
+            // the same TransparencyGrader.findBestEvidence gate the website path uses. Labelled
+            // separately from "Official Website" below: a customer's photo of a printed menu
+            // is real evidence, but not the same authority as the cafe's own site, and this
+            // project's whole premise is showing that provenance honestly.
+            cafe.setLevel(photoEvidence.level());
+            cafe.setType("cafe");
+            cafe.setEvidenceQuote(photoEvidence.quote());
+            cafe.setEvidenceSource("https://www.google.com/maps/place/?q=place_id:" + place.googleId());
+            cafe.setEvidenceSourceLabel("Menu Photo (Google Maps)");
+            cafe.setEvidenceVerifiedDate(verifiedDate);
+            cafe.setTagline("");
+            cafe.setDescription("");
+            cafe.setSpecialties("");
+            cafe.setCoverColor(coverColorForLevel(photoEvidence.level().name()));
         } else {
             // No content means nothing was ever read — website null, scrape failed, or
             // whatever came back was blank. That is not the same finding as C, which means
@@ -428,7 +485,7 @@ public class CafeService {
 
             String url = content.startUrl();
             ScraperService.ScrapeResult scraped =
-                    new ScraperService.ScrapeResult(content.text(), content.pageTexts());
+                    new ScraperService.ScrapeResult(content.text(), content.pageTexts(), List.of());
 
             // Both channels, for every row. A cafe demoted to C had its quote cleared, so
             // without this the C set would be judged on the page scan alone while the B set
@@ -625,6 +682,255 @@ public class CafeService {
     public record RegradeOptions(
             String level, boolean dryRun, int limit, int offset, boolean analyse,
             boolean sample, long seed, boolean includeUnreachable, String resumeFrom) {}
+
+    public record PhotoBackfillOptions(boolean dryRun, int limit, int offset, String resumeFrom) {}
+
+    /**
+     * Re-checks cafes stored before photo verification existed — {@link #cannotBeRead}, same
+     * pool {@code regrade}'s {@code includeUnreachable=false} already excludes — against their
+     * Google Maps menu photos. Unlike {@link #discoverAndSave}, none of these rows have a
+     * {@code googleId} yet, so each candidate costs one fresh Places Text Search lookup to
+     * recover it: the same request type discovery already spends against, at Google's
+     * standard Text Search price. That lookup is <em>not</em> covered by
+     * {@link ApiBudgetGuard}'s free-tier Photo/vision ceilings — only the photo fetch and
+     * vision call after it are.
+     *
+     * <p>Defaults to a dry run and is journaled the same way {@link #regrade} is, so a sweep
+     * of hundreds of cafes can be reviewed before anything is written and resumed if
+     * interrupted.
+     */
+    public Map<String, Object> backfillPhotoVerification(PhotoBackfillOptions options) {
+        List<Cafe> candidates = cafeRepository.findAll().stream()
+                .filter(this::cannotBeRead)
+                .sorted(Comparator.comparing(Cafe::getId))
+                .collect(java.util.stream.Collectors.toCollection(ArrayList::new));
+
+        int pool = candidates.size();
+        Set<String> alreadyDone = readJournalIds(options.resumeFrom());
+        if (!alreadyDone.isEmpty()) candidates.removeIf(c -> alreadyDone.contains(c.getId()));
+
+        List<Cafe> targets = candidates.stream()
+                .skip(Math.max(0, options.offset()))
+                .limit(options.limit() > 0 ? options.limit() : Long.MAX_VALUE)
+                .toList();
+
+        System.out.printf("[PhotoBackfill] selected %d of %d unreadable cafes (dryRun=%b)%n",
+                targets.size(), pool, options.dryRun());
+
+        java.io.PrintWriter journal = openBackfillJournal(options);
+        int found = 0, notFound = 0, noEvidence = 0;
+        String verifiedDate = LocalDate.now().format(DateTimeFormatter.ofPattern("MMMM yyyy"));
+
+        try {
+            for (Cafe cafe : targets) {
+                GooglePlacesService.PlaceInfo place = googlePlacesService.findPlaceByNameAndAddress(
+                        cafe.getName(), cafe.getAddress(), cafe.getLat(), cafe.getLng());
+
+                if (place == null) {
+                    writeBackfillRow(journal, cafe, "NOT-FOUND", null);
+                    notFound++;
+                    sleep(500);
+                    continue;
+                }
+
+                if (!options.dryRun() && !place.googleId().equals(cafe.getGoogleId())) {
+                    cafe.setGoogleId(place.googleId());
+                    cafeRepository.save(cafe);
+                }
+
+                MenuPhotoVerifier.PhotoEvidence evidence = menuPhotoVerifier.verify(place).orElse(null);
+
+                if (evidence == null) {
+                    writeBackfillRow(journal, cafe, "NO-EVIDENCE", null);
+                    noEvidence++;
+                    sleep(500);
+                    continue;
+                }
+
+                System.out.printf("[PhotoBackfill] → '%s': %s → %s from a menu photo%n",
+                        cafe.getName(), cafe.getLevel(), evidence.level());
+                writeBackfillRow(journal, cafe, "FOUND", evidence.level().name() + ": " + evidence.quote());
+                found++;
+
+                if (!options.dryRun()) {
+                    cafe.setLevel(evidence.level());
+                    cafe.setEvidenceQuote(evidence.quote());
+                    cafe.setEvidenceSource("https://www.google.com/maps/place/?q=place_id:" + place.googleId());
+                    cafe.setEvidenceSourceLabel("Menu Photo (Google Maps)");
+                    cafe.setEvidenceVerifiedDate(verifiedDate);
+                    cafe.setCoverColor(coverColorForLevel(evidence.level().name()));
+                    cafeRepository.save(cafe);
+                }
+                sleep(500);
+            }
+        } finally {
+            if (journal != null) journal.close();
+        }
+
+        Map<String, Object> summary = new LinkedHashMap<>();
+        summary.put("pool", pool);
+        summary.put("selected", targets.size());
+        summary.put("found", found);
+        summary.put("noEvidence", noEvidence);
+        summary.put("notFound", notFound);
+        summary.put("dryRun", options.dryRun());
+        summary.put("usage", budgetGuard.snapshot());
+        System.out.printf("[PhotoBackfill] Done. found=%d noEvidence=%d notFound=%d (dryRun=%b)%n",
+                found, noEvidence, notFound, options.dryRun());
+        return summary;
+    }
+
+    public record WebsiteImageBackfillOptions(boolean dryRun, int limit, int offset, String resumeFrom) {}
+
+    /**
+     * Re-checks Level C cafes that DO have a reachable website — the opposite pool from
+     * {@link #backfillPhotoVerification}, which targets cafes with no reachable content at
+     * all. Some sites put their sourcing story in a banner or brand-story graphic instead
+     * of real text, which {@link ScraperService}'s text-only scrape never sees. Re-scrapes
+     * each cafe (free — the same request the text scraper already makes) and checks any
+     * images the page carries via {@link WebsiteImageVerifier}.
+     *
+     * <p>Defaults to a dry run and is journaled the same way {@link #regrade} is.
+     */
+    public Map<String, Object> backfillWebsiteImages(WebsiteImageBackfillOptions options) {
+        List<Cafe> candidates = cafeRepository.findAll().stream()
+                .filter(c -> c.getLevel() == TransparencyLevel.C)
+                .filter(c -> !cannotBeRead(c))
+                .sorted(Comparator.comparing(Cafe::getId))
+                .collect(java.util.stream.Collectors.toCollection(ArrayList::new));
+
+        int pool = candidates.size();
+        Set<String> alreadyDone = readJournalIds(options.resumeFrom());
+        if (!alreadyDone.isEmpty()) candidates.removeIf(c -> alreadyDone.contains(c.getId()));
+
+        List<Cafe> targets = candidates.stream()
+                .skip(Math.max(0, options.offset()))
+                .limit(options.limit() > 0 ? options.limit() : Long.MAX_VALUE)
+                .toList();
+
+        System.out.printf("[ImageBackfill] selected %d of %d reachable Level C cafes (dryRun=%b)%n",
+                targets.size(), pool, options.dryRun());
+
+        java.io.PrintWriter journal = openImageBackfillJournal(options);
+        int found = 0, noImages = 0, noEvidence = 0, unreachable = 0;
+        String verifiedDate = LocalDate.now().format(DateTimeFormatter.ofPattern("MMMM yyyy"));
+
+        try {
+            for (Cafe cafe : targets) {
+                String website = cafe.getWebsite();
+                if (website == null || website.isBlank()) {
+                    writeBackfillRow(journal, cafe, "UNREACHABLE", null);
+                    unreachable++;
+                    continue;
+                }
+
+                ScraperService.ScrapeResult scraped;
+                try {
+                    scraped = scraperService.scrapeWithTracking(withScheme(website));
+                } catch (Exception e) {
+                    writeBackfillRow(journal, cafe, "UNREACHABLE", e.getMessage());
+                    unreachable++;
+                    continue;
+                }
+
+                if (scraped == null || scraped.imageUrls().isEmpty()) {
+                    writeBackfillRow(journal, cafe, "NO-IMAGES", null);
+                    noImages++;
+                    sleep(500);
+                    continue;
+                }
+
+                WebsiteImageVerifier.ImageEvidence evidence =
+                        websiteImageVerifier.verify(scraped.imageUrls()).orElse(null);
+
+                if (evidence == null) {
+                    writeBackfillRow(journal, cafe, "NO-EVIDENCE", null);
+                    noEvidence++;
+                    sleep(500);
+                    continue;
+                }
+
+                System.out.printf("[ImageBackfill] → '%s': %s → %s from a website image%n",
+                        cafe.getName(), cafe.getLevel(), evidence.level());
+                writeBackfillRow(journal, cafe, "FOUND", evidence.level().name() + ": " + evidence.quote());
+                found++;
+
+                if (!options.dryRun()) {
+                    cafe.setLevel(evidence.level());
+                    cafe.setEvidenceQuote(evidence.quote());
+                    String src = evidence.imageUrl();
+                    cafe.setEvidenceSource(src.length() > 250 ? src.substring(0, 250) : src);
+                    cafe.setEvidenceSourceLabel("Website Image");
+                    cafe.setEvidenceVerifiedDate(verifiedDate);
+                    cafe.setCoverColor(coverColorForLevel(evidence.level().name()));
+                    cafeRepository.save(cafe);
+                }
+                sleep(500);
+            }
+        } finally {
+            if (journal != null) journal.close();
+        }
+
+        Map<String, Object> summary = new LinkedHashMap<>();
+        summary.put("pool", pool);
+        summary.put("selected", targets.size());
+        summary.put("found", found);
+        summary.put("noEvidence", noEvidence);
+        summary.put("noImages", noImages);
+        summary.put("unreachable", unreachable);
+        summary.put("dryRun", options.dryRun());
+        summary.put("usage", budgetGuard.snapshot());
+        System.out.printf("[ImageBackfill] Done. found=%d noEvidence=%d noImages=%d unreachable=%d (dryRun=%b)%n",
+                found, noEvidence, noImages, unreachable, options.dryRun());
+        return summary;
+    }
+
+    private java.io.PrintWriter openImageBackfillJournal(WebsiteImageBackfillOptions options) {
+        try {
+            java.nio.file.Path dir = java.nio.file.Path.of("data", "regrade-runs");
+            java.nio.file.Files.createDirectories(dir);
+            String stamp = LocalDate.now() + "-" + System.currentTimeMillis();
+            java.nio.file.Path file = dir.resolve(
+                    "image-backfill-" + (options.dryRun() ? "dry" : "applied") + "-" + stamp + ".jsonl");
+            var writer = new java.io.PrintWriter(java.nio.file.Files.newBufferedWriter(file), true);
+            System.out.printf("[ImageBackfill] journal: %s%n", file);
+            return writer;
+        } catch (Exception e) {
+            System.out.printf("[ImageBackfill] journal unavailable (%s) — continuing without one%n", e.getMessage());
+            return null;
+        }
+    }
+
+    private java.io.PrintWriter openBackfillJournal(PhotoBackfillOptions options) {
+        try {
+            java.nio.file.Path dir = java.nio.file.Path.of("data", "regrade-runs");
+            java.nio.file.Files.createDirectories(dir);
+            String stamp = LocalDate.now() + "-" + System.currentTimeMillis();
+            java.nio.file.Path file = dir.resolve(
+                    "photo-backfill-" + (options.dryRun() ? "dry" : "applied") + "-" + stamp + ".jsonl");
+            var writer = new java.io.PrintWriter(java.nio.file.Files.newBufferedWriter(file), true);
+            System.out.printf("[PhotoBackfill] journal: %s%n", file);
+            return writer;
+        } catch (Exception e) {
+            System.out.printf("[PhotoBackfill] journal unavailable (%s) — continuing without one%n", e.getMessage());
+            return null;
+        }
+    }
+
+    private void writeBackfillRow(java.io.PrintWriter journal, Cafe cafe, String outcome, String detail) {
+        if (journal == null) return;
+        try {
+            Map<String, Object> row = new LinkedHashMap<>();
+            row.put("id", cafe.getId());
+            row.put("name", cafe.getName());
+            row.put("from", cafe.getLevel().name());
+            row.put("outcome", outcome);
+            if (detail != null) row.put("detail", detail);
+            journal.println(JSON.writeValueAsString(row));
+        } catch (Exception ignored) {
+            // A journal failure must never take the sweep down with it.
+        }
+    }
 
     private record Selection(List<Cafe> targets, int total, int excludedUnreachable, int alreadyDone) {}
 

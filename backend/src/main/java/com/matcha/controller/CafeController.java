@@ -132,6 +132,60 @@ public class CafeController {
     }
 
     /**
+     * POST /api/cafes/backfill-photos?dryRun=true&amp;limit=50&amp;offset=0&amp;resumeFrom=...
+     *
+     * Re-checks cafes stored before photo verification existed (no scrapable website or
+     * Instagram) against their Google Maps menu photos. Each candidate costs a fresh Places
+     * Text Search lookup (their googleId isn't stored) plus whatever the photo/vision check
+     * spends. Defaults to a dry run — nothing is written until dryRun=false.
+     */
+    @PostMapping("/backfill-photos")
+    public ResponseEntity<Map<String, Object>> backfillPhotos(
+            @RequestParam(defaultValue = "true") boolean dryRun,
+            @RequestParam(defaultValue = "0") int limit,
+            @RequestParam(defaultValue = "0") int offset,
+            @RequestParam(required = false) String resumeFrom
+    ) {
+        return ResponseEntity.ok(cafeService.backfillPhotoVerification(
+                new CafeService.PhotoBackfillOptions(dryRun, limit, offset, resumeFrom)));
+    }
+
+    /**
+     * POST /api/cafes/backfill-website-images?dryRun=true&amp;limit=50&amp;offset=0&amp;resumeFrom=...
+     *
+     * Re-checks Level C cafes that DO have a reachable website for a sourcing disclosure
+     * hiding in an image (banner, brand-story graphic) rather than in text. Free to
+     * re-scrape; only the vision check is metered. Defaults to a dry run.
+     */
+    @PostMapping("/backfill-website-images")
+    public ResponseEntity<Map<String, Object>> backfillWebsiteImages(
+            @RequestParam(defaultValue = "true") boolean dryRun,
+            @RequestParam(defaultValue = "0") int limit,
+            @RequestParam(defaultValue = "0") int offset,
+            @RequestParam(required = false) String resumeFrom
+    ) {
+        return ResponseEntity.ok(cafeService.backfillWebsiteImages(
+                new CafeService.WebsiteImageBackfillOptions(dryRun, limit, offset, resumeFrom)));
+    }
+
+    /**
+     * GET /api/cafes/photo-verify-usage
+     * Read-only: how much of the free/budget ceiling the menu-photo verification pipeline
+     * has spent this month, and how much remains.
+     */
+    @GetMapping("/photo-verify-usage")
+    public ResponseEntity<Map<String, Object>> getPhotoVerifyUsage() {
+        var usage = cafeService.getPhotoVerifyUsage();
+        Map<String, Object> result = new LinkedHashMap<>();
+        result.put("placesUsed", usage.placesUsed());
+        result.put("placesCeiling", usage.placesCeiling());
+        result.put("placesRemaining", usage.placesCeiling() - usage.placesUsed());
+        result.put("openAiSpent", usage.openAiSpent());
+        result.put("openAiDollarCeiling", usage.openAiDollarCeiling());
+        return ResponseEntity.ok(result);
+    }
+
+    /**
      * POST /api/cafes/discover
      * Triggers the full Overpass → scrape → Claude pipeline.
      * This is a long-running operation — expect 5–15 minutes.

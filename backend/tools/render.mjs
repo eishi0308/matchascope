@@ -56,6 +56,30 @@ const SKIP = /(mailto:|tel:|\.pdf|\.jpg|\.png|\.webp|instagram\.com|facebook\.co
 const PARKED = /(godaddy|sedoparking|parkingcrew|bodis|afternic|domain(?:name)?s? for sale)/i;
 
 /**
+ * Instagram truncates a long bio behind an inline "…more" toggle, and the truncation can
+ * land mid-word ("Uji matc… more") — which is exactly the kind of text a sourcing claim
+ * lives in. A plain click on the toggle silently no-ops: an unauthenticated session shows
+ * a login overlay that intercepts the pointer event without Playwright's actionability
+ * check ever seeing it as blocked. Escape dismisses that overlay first; the "more" span is
+ * matched on exact text so this never fires on "Show more posts…", a different element
+ * later in the same page.
+ */
+async function expandInstagramBio(page) {
+  if (!/instagram\.com/.test(page.url())) return;
+  try {
+    // The login overlay mounts client-side, after "load" already fired — pressing Escape
+    // immediately dismisses nothing, the overlay appears a moment later, and it silently
+    // eats the click. A short settle wait first is what fixes that race.
+    await page.waitForTimeout(1000);
+    await page.keyboard.press("Escape");
+    await page.locator("span").filter({ hasText: /^more$/ }).first().click({ timeout: 2000 });
+    await page.waitForTimeout(400);
+  } catch {
+    // No toggle to expand (short bio, or the DOM shifted) — read whatever is already there.
+  }
+}
+
+/**
  * Text as a reader sees it.
  *
  * <p>The wait matters more than the extraction. "domcontentloaded" fires before the
@@ -100,6 +124,7 @@ async function readSite(browser, { id, url }) {
     const page = await context.newPage();
     const start = url.startsWith("http") ? url : `https://${url}`;
     await page.goto(start, { timeout: PAGE_TIMEOUT, waitUntil: "load" });
+    await expandInstagramBio(page);
     const home = await visibleText(page);
     visited.add(page.url());
 

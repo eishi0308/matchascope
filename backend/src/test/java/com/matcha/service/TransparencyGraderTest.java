@@ -12,6 +12,26 @@ import static org.junit.jupiter.api.Assertions.*;
  */
 class TransparencyGraderTest {
 
+    // ── A disclosure past the first matcha mention, in punctuation-free text ──────
+
+    @Test
+    @DisplayName("OUJI Instagram bio: a later, specific mention must not be shadowed by an earlier generic one")
+    void secondMatchaMentionCarriesTheDisclosure() {
+        // Real text rendered from Instagram — no sentence punctuation at all, which is
+        // exactly what leaves candidatePassages() unable to split it into separate
+        // sentences. The passage stays one long run-on segment, and tightening used to
+        // anchor its one window to the FIRST "matcha" ("Matcha Cafe" in the name) —
+        // ~190 characters before the real disclosure, outside a single ±150 window.
+        String bio = "OUJI | Matcha Cafe & Pop Up - Matcha in Sydney ouji.sydney 📍"
+                + "Sydney matcha cafe, Haymarket 𝗢𝗣𝗘𝗡 7 days "
+                + "Mon-Fri : 6.30am - 7pm Sat-Sun: 6.30am - 6pm we’re using 1st harvest Uji matcha";
+
+        TransparencyGrader.Evidence evidence = TransparencyGrader.findBestEvidence(bio);
+        assertNotNull(evidence, "the 'Uji matcha' disclosure must not be discarded for sitting past the first mention");
+        assertEquals(TransparencyLevel.A, evidence.level());
+        assertTrue(evidence.quote().toLowerCase().contains("uji"), "the kept passage must actually carry the region name");
+    }
+
     // ── Cases that were wrongly stuck at B ────────────────────────────────────
 
     @Test
