@@ -1,12 +1,15 @@
 "use client";
 
 import dynamic from "next/dynamic";
-import { useState, useMemo, useEffect } from "react";
-import { Search, SlidersHorizontal, X, ChevronDown, Check, MapPin, List, Map } from "lucide-react";
+import { useRouter, usePathname } from "next/navigation";
+import { useState, useMemo, useEffect, useCallback } from "react";
+import { Search, SlidersHorizontal, X, ChevronDown, Check, MapPin, List, Map, AlertTriangle, RefreshCw, Heart } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import Navbar from "@/components/Navbar";
 import CafeDetailPanel from "@/components/CafeDetailPanel";
 import LevelFilter from "@/components/LevelFilter";
+import FavoriteButton from "@/components/FavoriteButton";
+import { useFavoriteIds } from "@/lib/favorites";
 import { Cafe, levelConfig, TransparencyLevel, City, CafeType } from "@/data/cafes";
 import { fetchCafes, fetchStats } from "@/lib/api";
 
@@ -62,15 +65,23 @@ const itemVariants = {
 };
 
 export default function MapPage() {
+  const router = useRouter();
+  const pathname = usePathname();
+  const favoriteIds = useFavoriteIds();
+
   const [cafes,        setCafes]       = useState<Cafe[]>([]);
   const [loading,      setLoading]     = useState(true);
+  const [loadError,    setLoadError]   = useState(false);
+  const [reloadTick,   setReloadTick]  = useState(0);
   const [discovering,  setDiscovering] = useState(false);
   const [query,        setQuery]       = useState("");
   // Empty array = no level filter (all levels shown)
   const [levelFilter,  setLevelFilter] = useState<TransparencyLevel[]>([]);
   const [cityFilter,   setCityFilter]  = useState<CityFilter>("All");
   const [typeFilter,   setTypeFilter]  = useState<CafeType | "All">("All");
+  const [savedOnly,    setSavedOnly]   = useState(false);
   const [selectedCafe, setSelectedCafe] = useState<Cafe | null>(null);
+  const [pendingCafeId, setPendingCafeId] = useState<string | null>(null);
   const [sidebarOpen,  setSidebarOpen]  = useState(true);
   const [isMobile,     setIsMobile]    = useState(false);
   const [mobileView,   setMobileView]  = useState<"list" | "map">("map");
@@ -102,14 +113,22 @@ export default function MapPage() {
       (o) => o.value !== "All" && o.value.toLowerCase() === city?.trim().toLowerCase(),
     );
     if (match) setCityFilter(match.value);
+
+    // ?cafe= deep-links a single cafe (shared from a permalink page, or the browser
+    // back button) — held here until the cafe list has actually loaded, below.
+    const cafeId = params.get("cafe");
+    if (cafeId) setPendingCafeId(cafeId);
   }, []);
 
   useEffect(() => {
     let pollInterval: ReturnType<typeof setInterval> | null = null;
+    let cancelled = false;
 
     const load = async () => {
+      setLoadError(false);
       try {
         const [cafesData, stats] = await Promise.all([fetchCafes(), fetchStats()]);
+        if (cancelled) return;
         setCafes(cafesData);
         setDiscovering(stats.discovering);
 
@@ -125,15 +144,23 @@ export default function MapPage() {
         }
       } catch (err) {
         console.error("[Map load error]", err);
-        setCafes([]);
+        if (!cancelled) setLoadError(true);
       } finally {
-        setLoading(false);
+        if (!cancelled) setLoading(false);
       }
     };
 
     load();
-    return () => { if (pollInterval) clearInterval(pollInterval); };
-  }, []);
+    return () => { cancelled = true; if (pollInterval) clearInterval(pollInterval); };
+  }, [reloadTick]);
+
+  // Resolve a ?cafe= deep link once the list it needs to search is actually loaded
+  useEffect(() => {
+    if (!pendingCafeId || cafes.length === 0) return;
+    const match = cafes.find((c) => c.id === pendingCafeId);
+    if (match) setSelectedCafe(match);
+    setPendingCafeId(null);
+  }, [pendingCafeId, cafes]);
 
   // Everything except the level filter — so level counts stay stable while toggling levels
   const baseFiltered = useMemo(() => cafes.filter((c) => {
@@ -141,9 +168,10 @@ export default function MapPage() {
     return (
       (!q || c.name.toLowerCase().includes(q) || c.suburb.toLowerCase().includes(q) || c.city.toLowerCase().includes(q) || c.specialties.some((s) => s.toLowerCase().includes(q))) &&
       (cityFilter === "All" || c.city === cityFilter) &&
-      (typeFilter === "All" || c.type === typeFilter)
+      (typeFilter === "All" || c.type === typeFilter) &&
+      (!savedOnly || favoriteIds.has(c.id))
     );
-  }), [cafes, query, cityFilter, typeFilter]);
+  }), [cafes, query, cityFilter, typeFilter, savedOnly, favoriteIds]);
 
   const filtered = useMemo(
     () => (levelFilter.length === 0 ? baseFiltered : baseFiltered.filter((c) => levelFilter.includes(c.level))),
@@ -162,12 +190,22 @@ export default function MapPage() {
     );
 
   const activeFilters =
-    (levelFilter.length > 0 ? 1 : 0) + [cityFilter, typeFilter].filter((f) => f !== "All").length;
-  const clearAll = () => { setLevelFilter([]); setCityFilter("All"); setTypeFilter("All"); setQuery(""); };
+    (levelFilter.length > 0 ? 1 : 0) + [cityFilter, typeFilter].filter((f) => f !== "All").length + (savedOnly ? 1 : 0);
+  const clearAll = () => { setLevelFilter([]); setCityFilter("All"); setTypeFilter("All"); setQuery(""); setSavedOnly(false); };
+
+  // Keeps the URL in step with the selection so a cafe can be shared/back-buttoned to —
+  // not just held in React state, which vanished the instant you copied the address bar.
+  const syncCafeParam = useCallback((cafe: Cafe | null) => {
+    const params = new URLSearchParams(window.location.search);
+    if (cafe) params.set("cafe", cafe.id); else params.delete("cafe");
+    const qs = params.toString();
+    router.replace(qs ? `${pathname}?${qs}` : pathname, { scroll: false });
+  }, [router, pathname]);
 
   // On mobile list view, tapping a cafe switches to map view then opens detail
   const handleSelectCafe = (cafe: Cafe | null) => {
     setSelectedCafe(cafe);
+    syncCafeParam(cafe);
     if (cafe && isMobile && mobileView === "list") {
       setMobileView("map");
     }
@@ -294,6 +332,12 @@ export default function MapPage() {
                   <p className="text-[16px] font-medium text-matcha-700">Discovering cafes…</p>
                   <p className="text-[16px] text-gray-400 mt-1">Searching Google Maps & analysing menus</p>
                 </>
+              ) : savedOnly ? (
+                <>
+                  <Heart size={22} className="text-gray-300 mx-auto mb-2" />
+                  <p className="text-[16px] text-gray-400">No saved cafes yet.</p>
+                  <p className="text-[16px] text-gray-400 mt-1">Tap the heart on any cafe to keep it here.</p>
+                </>
               ) : (
                 <>
                   <div className="text-2xl mb-2">🍵</div>
@@ -313,10 +357,21 @@ export default function MapPage() {
                 const cfg = levelConfig[cafe.level];
                 const isSelected = selectedCafe?.id === cafe.id;
                 return (
-                  <motion.button
+                  // A div, not a button — it now has a real <button> (the favourite
+                  // heart) nested inside it, and buttons can't nest in valid HTML.
+                  // role="button" + keyboard handling keeps it as accessible as before.
+                  <motion.div
                     key={cafe.id}
+                    role="button"
+                    tabIndex={0}
                     onClick={() => handleSelectCafe(isSelected ? null : cafe)}
-                    className="w-full flex items-start gap-3 p-3 rounded-xl text-left"
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter" || e.key === " ") {
+                        e.preventDefault();
+                        handleSelectCafe(isSelected ? null : cafe);
+                      }
+                    }}
+                    className="w-full flex items-start gap-3 p-3 rounded-xl text-left cursor-pointer"
                     variants={itemVariants}
                     animate={{
                       background: isSelected ? "#f2f8f0" : "transparent",
@@ -341,12 +396,11 @@ export default function MapPage() {
                         <span className="text-[16px] text-gray-400">{cafe.suburb}, {cafe.city}</span>
                       </div>
                     </div>
-                    {isMobile && (
-                      <div className="flex-shrink-0 self-center">
-                        <Map size={13} className="text-gray-300" />
-                      </div>
-                    )}
-                  </motion.button>
+                    <div className="flex items-center gap-0.5 flex-shrink-0 self-center -mr-1.5">
+                      <FavoriteButton id={cafe.id} name={cafe.name} size={13} />
+                      {isMobile && <Map size={13} className="text-gray-300" />}
+                    </div>
+                  </motion.div>
                 );
               })}
             </motion.div>
@@ -456,6 +510,19 @@ export default function MapPage() {
             </motion.div>
           ))}
 
+          <motion.button
+            onClick={() => setSavedOnly((v) => !v)}
+            aria-pressed={savedOnly}
+            className="flex-shrink-0 flex items-center gap-1.5 px-3.5 py-2 sm:py-2.5 rounded-xl text-[16px] font-medium transition-colors"
+            style={savedOnly ? { background: "#fee2e2", color: "#dc2626" } : { background: "#f3f4f6", color: "#374151" }}
+            whileHover={{ scale: 1.03 }}
+            whileTap={{ scale: 0.96 }}
+            transition={SPRING}
+          >
+            <Heart size={13} fill={savedOnly ? "#dc2626" : "none"} />
+            Saved{favoriteIds.size > 0 ? ` (${favoriteIds.size})` : ""}
+          </motion.button>
+
           <AnimatePresence>
             {activeFilters > 0 && (
               <motion.button
@@ -506,6 +573,36 @@ export default function MapPage() {
           </AnimatePresence>
         </div>
       </motion.div>
+
+      {/* ── ERROR BANNER ─────────────────────────────────────────────── */}
+      {/* A failed fetch used to just set cafes to [] — indistinguishable from "no
+          cafes match your search". This says what actually happened and offers a way out. */}
+      <AnimatePresence>
+        {loadError && (
+          <motion.div
+            className="flex-shrink-0 flex items-center gap-3 px-4 py-3"
+            style={{ background: "#fef2f2", borderBottom: "1px solid #fecaca" }}
+            initial={{ height: 0, opacity: 0 }}
+            animate={{ height: "auto", opacity: 1 }}
+            exit={{ height: 0, opacity: 0 }}
+            transition={{ duration: 0.25, ease: EASE }}
+          >
+            <AlertTriangle size={16} className="text-red-500 flex-shrink-0" />
+            <span className="text-[16px] text-red-700 flex-1">
+              Couldn&apos;t load cafes — the connection to our database failed.
+            </span>
+            <motion.button
+              onClick={() => setReloadTick((t) => t + 1)}
+              className="flex-shrink-0 flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[16px] font-semibold text-white"
+              style={{ background: "#dc2626" }}
+              whileHover={{ scale: 1.04 }}
+              whileTap={{ scale: 0.95 }}
+            >
+              <RefreshCw size={12} />Retry
+            </motion.button>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       {/* ── MAIN ─────────────────────────────────────────────────────── */}
       <div className="flex flex-1 overflow-hidden relative">
@@ -596,7 +693,7 @@ export default function MapPage() {
             </div>
 
             {/* Cafe detail panel (bottom sheet) */}
-            <CafeDetailPanel cafe={selectedCafe} onClose={() => setSelectedCafe(null)} />
+            <CafeDetailPanel cafe={selectedCafe} onClose={() => handleSelectCafe(null)} />
           </>
         ) : (
           /* ── DESKTOP LAYOUT: sidebar + map side by side ─────────── */
@@ -628,7 +725,7 @@ export default function MapPage() {
               <MapClient
                 cafes={filtered}
                 selectedCafe={selectedCafe}
-                onSelectCafe={setSelectedCafe}
+                onSelectCafe={handleSelectCafe}
                 city={cityFilter}
               />
 
@@ -692,7 +789,7 @@ export default function MapPage() {
             </div>
 
             {/* Cafe detail panel (right panel) */}
-            <CafeDetailPanel cafe={selectedCafe} onClose={() => setSelectedCafe(null)} />
+            <CafeDetailPanel cafe={selectedCafe} onClose={() => handleSelectCafe(null)} />
           </>
         )}
       </div>

@@ -148,6 +148,17 @@ body {
   .leaflet-marker-icon { transition: none; }
 }
 
+/* Grain — a hairline of texture over a flat gradient is the difference between a
+   surface and a sticker. Classic feTurbulence-as-data-URI: tiled, blended with
+   `overlay` so it reads as noise in the material rather than a layer sitting on it,
+   opacity low enough to be felt more than seen. */
+.grain-overlay {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='240' height='240'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+  background-repeat: repeat;
+  mix-blend-mode: overlay;
+  opacity: 0.05;
+}
+
 /* Glassmorphism utility */
 .glass {
   background: rgba(255, 255, 255, 0.72);

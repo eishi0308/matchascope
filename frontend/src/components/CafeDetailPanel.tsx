@@ -1,9 +1,13 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { X, ExternalLink, MapPin, Navigation, Calendar, Quote, Shield, Tag, Star } from "lucide-react";
+import Link from "next/link";
+import { X, ExternalLink, MapPin, Navigation, Calendar, Quote, Shield, Tag, Star, Maximize2 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Cafe, levelConfig } from "@/data/cafes";
+import { cafeUrl } from "@/lib/slug";
+import FavoriteButton from "./FavoriteButton";
+import SuggestModal from "./SuggestModal";
 
 /**
  * Google Maps links. Searching by name + address lands on the business listing
@@ -68,9 +72,16 @@ function PanelContent({
   // opacity property a plain style.opacity would use, so the two would fight and the
   // static value would lose once the entrance animation finished.
   const headerTextMuted = onLight ? `${level.headerText}b8` : "rgba(255,255,255,0.72)";
+  const [suggestOpen, setSuggestOpen] = useState(false);
 
   return (
     <>
+      <SuggestModal
+        isOpen={suggestOpen}
+        onClose={() => setSuggestOpen(false)}
+        context={{ name: cafe.name, suburb: cafe.suburb, city: cafe.city }}
+      />
+
       {/* Coloured header */}
       <motion.div
         className="relative h-36 sm:h-40 flex flex-col justify-end p-5 flex-shrink-0"
@@ -79,17 +90,20 @@ function PanelContent({
         animate={{ opacity: 1 }}
         transition={{ duration: 0.35, ease: EASE }}
       >
-        {/* Close */}
-        <motion.button
-          onClick={onClose}
-          className="absolute top-4 right-4 p-1.5 rounded-full transition-colors"
-          style={{ background: closeBg }}
-          whileHover={{ scale: 1.1, rotate: 90, backgroundColor: closeBgHover }}
-          whileTap={{ scale: 0.9 }}
-          transition={SPRING}
-        >
-          <X size={16} style={{ color: level.headerText }} />
-        </motion.button>
+        {/* Close + save */}
+        <div className="absolute top-4 right-4 flex items-center gap-1.5">
+          <FavoriteButton id={cafe.id} name={cafe.name} size={15} variant={onLight ? "light" : "dark"} />
+          <motion.button
+            onClick={onClose}
+            className="p-1.5 rounded-full transition-colors"
+            style={{ background: closeBg }}
+            whileHover={{ scale: 1.1, rotate: 90, backgroundColor: closeBgHover }}
+            whileTap={{ scale: 0.9 }}
+            transition={SPRING}
+          >
+            <X size={16} style={{ color: level.headerText }} />
+          </motion.button>
+        </div>
 
         {/* Level badge */}
         <div className="flex items-center gap-2 mb-2">
@@ -305,8 +319,19 @@ function PanelContent({
           )}
         </motion.div>
 
+        {/* Permalink — the shareable, indexable page for this cafe */}
+        <motion.div variants={rowVariants}>
+          <Link
+            href={cafeUrl(cafe)}
+            className="flex items-center justify-center gap-1.5 w-full py-2.5 rounded-xl text-[16px] font-medium text-gray-700 border border-gray-200 hover:border-matcha-200 hover:text-matcha-700 hover:bg-matcha-50 transition-colors"
+          >
+            <Maximize2 size={13} />View full page
+          </Link>
+        </motion.div>
+
         {/* Suggest update */}
         <motion.button
+          onClick={() => setSuggestOpen(true)}
           className="w-full py-2.5 rounded-xl text-[16px] font-medium text-matcha-700 border border-matcha-200"
           variants={rowVariants}
           whileHover={{ scale: 1.02, backgroundColor: "#f2f8f0" } as any}
