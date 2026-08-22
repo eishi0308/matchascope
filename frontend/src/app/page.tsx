@@ -1176,8 +1176,8 @@ export default function HomePage() {
 
             {/* Massive headline */}
             <motion.h2
-              className="text-center font-bold leading-[1.0]"
-              style={{ fontSize: "clamp(2.5rem, 7vw, 5.5rem)", color: "#f5f5f0", letterSpacing: "-0.035em" }}
+              className="text-center font-display font-bold text-chapter"
+              style={{ color: "#f5f5f0" }}
               initial={{ opacity: 0, y: 36 }}
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true }}
@@ -1258,7 +1258,7 @@ export default function HomePage() {
       </section>
 
       {/* ── PRESS PROOF ────────────────────────────────────────────── */}
-      <section className="py-16 sm:py-24 px-5" style={{ background: "#ffffff" }}>
+      <section className="py-sect px-5" style={{ background: "#fdfcf7" }}>
         <div className="max-w-5xl mx-auto">
 
           {/* Eyebrow */}
@@ -1294,7 +1294,7 @@ export default function HomePage() {
       </section>
 
       {/* ── TRANSPARENCY LEVELS ──────────────────────────────────────── */}
-      <section className="relative py-20 sm:py-28 px-5 overflow-hidden" style={{ background: "#ffffff" }}>
+      <section className="relative py-sect px-5 overflow-hidden" style={{ background: "#ffffff" }}>
         {/* Subtle background grid */}
         <div className="absolute inset-0 pointer-events-none opacity-[0.4]" style={{
           backgroundImage: "linear-gradient(rgba(0,0,0,0.03) 1px, transparent 1px), linear-gradient(90deg, rgba(0,0,0,0.03) 1px, transparent 1px)",
@@ -1316,8 +1316,8 @@ export default function HomePage() {
             </Reveal>
             <Reveal delay={0.05}>
               <h2
-                className="font-bold leading-[1.0] tracking-tight mb-8"
-                style={{ fontSize: "clamp(2.5rem, 6vw, 4.5rem)", color: "#1c2b1a", letterSpacing: "-0.035em" }}
+                className="font-display font-bold text-section mb-8"
+                style={{ color: "#1c2b1a" }}
               >
                 <span style={{ color: "#2e6027" }}>4</span> levels of<br /> transparency
               </h2>
@@ -1441,7 +1441,7 @@ export default function HomePage() {
       </section>
 
       {/* ── HOW IT WORKS ─────────────────────────────────────────────── */}
-      <section id="how-it-works" className="py-20 sm:py-28 px-5" style={{ background: "#ffffff" }}>
+      <section id="how-it-works" className="py-sect px-5" style={{ background: "#ffffff" }}>
         <div className="max-w-6xl mx-auto">
 
           {/* Header */}
@@ -1457,8 +1457,8 @@ export default function HomePage() {
             </Reveal>
             <Reveal delay={0.05}>
               <h2
-                className="font-bold leading-[1.0] tracking-tight mb-8"
-                style={{ fontSize: "clamp(2.5rem, 6vw, 4.5rem)", color: "#1c2b1a", letterSpacing: "-0.035em" }}
+                className="font-display font-bold text-section mb-8"
+                style={{ color: "#1c2b1a" }}
               >
                 How we verify<br /> every cafe
               </h2>
@@ -1530,7 +1530,7 @@ export default function HomePage() {
       <LandingProof verified={verified} />
 
       {/* ── CTA ──────────────────────────────────────────────────────── */}
-      <section className="py-16 sm:py-20 px-5 max-w-7xl mx-auto">
+      <section className="py-sect px-5 max-w-7xl mx-auto">
         <Reveal>
           <div className="relative rounded-3xl p-10 sm:p-14 text-center overflow-hidden"
             style={{ background: "linear-gradient(145deg, #0a1a0b 0%, #1e4a1a 55%, #2d6025 100%)" }}
@@ -1556,10 +1556,7 @@ export default function HomePage() {
                 <MessageSquarePlus size={28} className="text-matcha-300" />
               </motion.div>
 
-              <h2
-                className="font-bold leading-[1.0] tracking-tight text-white mb-8"
-                style={{ fontSize: "clamp(2.5rem, 6vw, 4.5rem)", letterSpacing: "-0.035em" }}
-              >
+              <h2 className="font-display font-bold text-section text-white mb-8">
                 Know a cafe we missed?
               </h2>
               <p

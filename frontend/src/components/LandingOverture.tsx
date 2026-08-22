@@ -413,7 +413,7 @@ function VerifiedMarquee({ verified }: { verified: Cafe[] }) {
 
   return (
     <section
-      className="py-14 sm:py-16 overflow-hidden"
+      className="py-sect-tight overflow-hidden"
       style={{ background: "#fdfcf7", borderTop: "1px solid #eee9dc", borderBottom: "1px solid #eee9dc" }}
       aria-label="Cafes with verified disclosure"
     >
@@ -594,14 +594,13 @@ function ConstellationMap({ verified }: { verified: Cafe[] }) {
   }, [verified]);
 
   return (
-    <section className="py-16 sm:py-24 px-5 bg-white" aria-label="Where the verified cafes are">
+    <section className="py-sect px-5 bg-white" aria-label="Where the verified cafes are">
       <div className="max-w-6xl mx-auto">
         <Reveal className="max-w-2xl">
           <div className="text-[16px] uppercase tracking-widest text-gray-500 font-semibold mb-4">
             The map
           </div>
-          <h2 className="font-display font-bold leading-[1.05] tracking-tight text-gray-900"
-              style={{ fontSize: "clamp(2rem, 5vw, 3.5rem)" }}>
+          <h2 className="font-display font-bold text-section text-gray-900">
             Every verified cafe, exactly where it stands.
           </h2>
           <p className="mt-4 text-[16px] text-gray-600 leading-relaxed">
@@ -685,15 +684,14 @@ function FeaturedCafes({ verified }: { verified: Cafe[] }) {
   if (!picks.length) return null;
 
   return (
-    <section className="py-16 sm:py-24 px-5" style={{ background: "#fdfcf7" }} aria-label="Featured verified cafes">
+    <section className="py-sect px-5" style={{ background: "#fdfcf7" }} aria-label="Featured verified cafes">
       <div className="max-w-6xl mx-auto">
         <Reveal className="flex flex-wrap items-end justify-between gap-4 mb-12">
           <div className="max-w-xl">
             <div className="text-[16px] uppercase tracking-widest text-gray-500 font-semibold mb-4">
               In their own words
             </div>
-            <h2 className="font-display font-bold leading-[1.05] tracking-tight text-gray-900"
-                style={{ fontSize: "clamp(2rem, 5vw, 3.5rem)" }}>
+            <h2 className="font-display font-bold text-section text-gray-900">
               Proof, not adjectives.
             </h2>
           </div>

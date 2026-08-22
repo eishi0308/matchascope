@@ -34,7 +34,24 @@ const config: Config = {
       },
       fontFamily: {
         sans: ["var(--font-inter)", "system-ui", "sans-serif"],
-        display: ["var(--font-playfair)", "Georgia", "serif"],
+        // "lnum" forces lining figures. Playfair ships old-style numerals by
+        // default, so 487 rendered with the 4 below the baseline and the 8 above
+        // the x-height — correct inside prose, wrong on a page built on big numbers.
+        display: [
+          ["var(--font-playfair)", "Georgia", "serif"],
+          { fontFeatureSettings: '"lnum"' },
+        ],
+      },
+      fontSize: {
+        // two headline steps, replacing the five that had accumulated
+        section: ["clamp(2rem, 4vw, 3.25rem)", { lineHeight: "1.08", letterSpacing: "-0.02em" }],
+        chapter: ["clamp(2.5rem, 6vw, 5rem)",  { lineHeight: "1.03", letterSpacing: "-0.03em" }],
+      },
+      spacing: {
+        // three vertical rhythm tiers, all multiples of 8
+        "sect-tight": "3.5rem",  // 56
+        "sect":       "6rem",    // 96
+        "sect-lg":    "8rem",    // 128
       },
       backgroundImage: {
         "matcha-gradient": "linear-gradient(135deg, #0f2010 0%, #1e3a1a 40%, #2e6027 100%)",
