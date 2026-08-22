@@ -464,14 +464,14 @@ function VerifiedMarquee({ verified }: { verified: Cafe[] }) {
   );
 }
 
-/** The headline finding, pinned and scrubbed by the scrollbar. */
+/** The headline finding, scrubbed by the scrollbar; pinned from md up. */
 function DisclosureStat({ stats }: { stats: Props["stats"] }) {
   const ref    = useRef<HTMLElement>(null);
   const reduce = useReducedMotion();
   // Measured from the moment the section appears at the bottom of the viewport,
-  // not from the moment it pins. The panel is 100dvh inside a 108vh section, so
-  // "start start"→"end end" left only 8vh of travel — every beat fired late,
-  // after the reader had already arrived.
+  // not from the moment it pins. From md up the panel is 100dvh inside a 108vh
+  // section, so "start start"→"end end" left only 8vh of travel — every beat
+  // fired late, after the reader had already arrived.
   const { scrollYProgress } = useScroll({ target: ref, offset: ["start end", "end end"] });
 
   // Same definition as the disclosure section further down the page: cafes that
@@ -482,9 +482,10 @@ function DisclosureStat({ stats }: { stats: Props["stats"] }) {
   const pct   = Math.round((named / read) * 100);
   const share = named / read;
 
-  // Travel here is one section height, and the panel pins at ~0.93 of it
+  // Travel from md up is one section height, and the panel pins at ~0.93 of it
   // (measured). So the arc runs the length of the approach and completes just
-  // as the panel settles, rather than finishing halfway up the screen.
+  // as the panel settles, rather than finishing halfway up the screen. On a
+  // phone the section is shorter, so the same beats simply resolve sooner.
   const scale   = useTransform(scrollYProgress, [0.08, 0.5], [reduce ? 1 : 0.86, 1]);
   const ringLen = useTransform(scrollYProgress, [0.12, 0.6], [0, 1]);
   // dashoffset 1 = empty ring; 1 - share = arc drawn to the true proportion
@@ -493,8 +494,12 @@ function DisclosureStat({ stats }: { stats: Props["stats"] }) {
   const copyOp  = useTransform(scrollYProgress, [0.55, 0.8], [reduce ? 1 : 0, 1]);
 
   return (
-    <section ref={ref} className="relative h-[108vh]" aria-label="Disclosure rate">
-      <div className="sticky top-0 h-[100dvh] flex flex-col items-center justify-center overflow-hidden"
+    <section ref={ref} className="relative md:h-[108vh]" aria-label="Disclosure rate">
+      {/* From md up the pinned viewport is the point — the number holds the whole
+          frame while the arc draws. On a phone that same frame left a screenful
+          of empty green above and below the stat, so below md the panel is sized
+          by its own content and nothing pins. */}
+      <div className="relative flex flex-col items-center justify-center overflow-hidden py-20 md:py-0 md:sticky md:top-0 md:h-[100dvh]"
            style={{ background: "#0f2010" }}>
         {/* Faint field rings */}
         <svg aria-hidden className="absolute inset-0 w-full h-full opacity-[0.13]" viewBox="0 0 100 100" preserveAspectRatio="xMidYMid slice">
@@ -511,7 +516,7 @@ function DisclosureStat({ stats }: { stats: Props["stats"] }) {
         {/* The share, drawn: the lit arc is the 17%, the dim ring the rest */}
         <svg
           aria-hidden
-          className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-[min(78vw,560px)] h-[min(78vw,560px)] -rotate-90"
+          className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-[min(72vw,420px)] h-[min(72vw,420px)] md:w-[min(78vw,560px)] md:h-[min(78vw,560px)] -rotate-90"
           viewBox="0 0 100 100"
         >
           <circle cx="50" cy="50" r="46" fill="none" stroke="rgba(255,255,255,0.10)" strokeWidth="1.1" />
@@ -528,23 +533,24 @@ function DisclosureStat({ stats }: { stats: Props["stats"] }) {
         </svg>
 
         <motion.div style={{ scale }} className="text-center px-5">
-          <div className="text-[16px] uppercase tracking-[0.2em] text-matcha-300 font-semibold mb-5">
+          <div className="text-[16px] uppercase tracking-[0.2em] text-matcha-300 font-semibold mb-3 md:mb-5">
             The finding
           </div>
-          <div className="font-display font-bold leading-none text-white flex items-baseline justify-center"
-               style={{ fontSize: "clamp(5rem, 22vw, 16rem)" }}>
+          {/* Two clamps rather than one: the phone wants a number sized to the
+              shorter panel, the desktop wants it to fill the pinned frame. */}
+          <div className="font-display font-bold leading-none text-white flex items-baseline justify-center text-[clamp(4rem,15vw,9.5rem)] md:text-[clamp(5rem,22vw,16rem)]">
             <Counter value={pct} />
             <span className="text-matcha-400 ml-1" style={{ fontSize: "0.42em" }}>%</span>
           </div>
-          <div className="font-display text-2xl sm:text-4xl text-white/90 mt-3 leading-snug">
+          <div className="font-display text-xl md:text-4xl text-white/90 mt-2 md:mt-3 leading-snug">
             of cafés we could read say
-            <br className="sm:hidden" /> their matcha is Japanese.
+            <br className="md:hidden" /> their matcha is Japanese.
           </div>
         </motion.div>
 
         <motion.p
           style={{ y: copyY, opacity: copyOp }}
-          className="mt-7 max-w-lg text-center text-[16px] leading-relaxed text-white/60 px-6"
+          className="mt-5 md:mt-7 max-w-lg text-center text-[16px] leading-relaxed text-white/60 px-6"
         >
           {/* "The full breakdown is below" was a stage direction: the breakdown is below,
               visibly, and a line of copy spent pointing at the next scroll is a line not
