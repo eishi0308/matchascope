@@ -4,7 +4,7 @@ import dynamic from "next/dynamic";
 import { useRouter, usePathname } from "next/navigation";
 import { useState, useMemo, useEffect, useCallback, useRef } from "react";
 import { Search, SlidersHorizontal, X, ChevronDown, Check, MapPin, List, Map, AlertTriangle, RefreshCw, Heart } from "lucide-react";
-import { motion, AnimatePresence } from "framer-motion";
+import { motion, AnimatePresence, useReducedMotion } from "framer-motion";
 import Navbar from "@/components/Navbar";
 import CafeDetailPanel from "@/components/CafeDetailPanel";
 import LevelFilter from "@/components/LevelFilter";
@@ -90,6 +90,7 @@ export default function MapPage() {
   const [sidebarOpen,  setSidebarOpen]  = useState(true);
   const [isMobile,     setIsMobile]    = useState(false);
   const [mobileView,   setMobileView]  = useState<"list" | "map">("map");
+  const reduceMotion = useReducedMotion();
 
   /**
    * How many rows are actually built.
@@ -686,55 +687,65 @@ export default function MapPage() {
 
             {/* Bottom toggle pill — Map / List switcher */}
             <div className="absolute bottom-6 left-1/2 -translate-x-1/2 z-[40] pointer-events-none">
+              {/*
+                A two-position switch, so it is built like one. The count that used to ride
+                beside "List" made that half of the control visibly wider than "Map", which
+                broke the symmetry the sliding pill depends on and left the two options
+                looking like different kinds of thing. The number is still on screen, in the
+                toolbar, where it belongs with the filters that change it.
+
+                The pill is one element moved between the two halves by layoutId rather than
+                a positioned bar animating left and right: framer measures both positions and
+                transforms between them, so it moves on the compositor instead of laying the
+                control out again on every frame.
+              */}
               <motion.div
-                className="pointer-events-auto relative flex p-1 rounded-full"
+                className="pointer-events-auto relative grid grid-cols-2 p-1 rounded-full"
                 style={{
-                  background: "rgba(15,15,15,0.82)",
-                  backdropFilter: "blur(16px)",
-                  WebkitBackdropFilter: "blur(16px)",
-                  boxShadow: "0 8px 32px rgba(0,0,0,0.28), 0 2px 8px rgba(0,0,0,0.2)",
+                  background: "rgba(15,15,15,0.86)",
+                  backdropFilter: "blur(20px) saturate(140%)",
+                  WebkitBackdropFilter: "blur(20px) saturate(140%)",
+                  border: "1px solid rgba(255,255,255,0.10)",
+                  boxShadow: "0 10px 34px rgba(0,0,0,0.32), 0 2px 8px rgba(0,0,0,0.22)",
                 }}
                 initial={{ opacity: 0, y: 16, scale: 0.9 }}
                 animate={{ opacity: 1, y: 0, scale: 1 }}
                 transition={{ delay: 0.3, ...SPRING }}
+                role="group"
+                aria-label="Switch between list and map"
               >
-                {/* Sliding indicator */}
-                <motion.div
-                  className="absolute top-1 bottom-1 rounded-full bg-white"
-                  style={{ boxShadow: "0 1px 6px rgba(0,0,0,0.18)" }}
-                  animate={{
-                    left: mobileView === "list" ? 4 : "50%",
-                    right: mobileView === "list" ? "50%" : 4,
-                  }}
-                  transition={SPRING}
-                />
-
-                <button
-                  onClick={() => setMobileView("list")}
-                  className="relative z-10 flex-1 flex items-center justify-center gap-1.5 px-5 py-2.5 rounded-full text-[16px] font-semibold transition-colors duration-200"
-                  style={{ color: mobileView === "list" ? "#1a1a1a" : "rgba(255,255,255,0.65)" }}
-                >
-                  <List size={14} />
-                  List
-                  <span
-                    className="text-[16px] font-bold px-1.5 py-0.5 rounded-full transition-colors duration-200"
-                    style={{
-                      background: mobileView === "list" ? "#e6f4e0" : "rgba(255,255,255,0.15)",
-                      color: mobileView === "list" ? "#2e6027" : "rgba(255,255,255,0.65)",
-                    }}
-                  >
-                    {filtered.length}
-                  </span>
-                </button>
-
-                <button
-                  onClick={() => setMobileView("map")}
-                  className="relative z-10 flex-1 flex items-center justify-center gap-1.5 px-5 py-2.5 rounded-full text-[16px] font-semibold transition-colors duration-200"
-                  style={{ color: mobileView === "map" ? "#1a1a1a" : "rgba(255,255,255,0.65)" }}
-                >
-                  <Map size={14} />
-                  Map
-                </button>
+                {([
+                  { key: "list", label: "List", Icon: List },
+                  { key: "map",  label: "Map",  Icon: Map  },
+                ] as const).map(({ key, label, Icon }) => {
+                  const active = mobileView === key;
+                  return (
+                    <button
+                      key={key}
+                      onClick={() => setMobileView(key)}
+                      aria-pressed={active}
+                      // 44px min height: the old 40px sat under every platform's touch floor.
+                      className="relative flex items-center justify-center gap-2 px-7 rounded-full text-[16px] font-semibold outline-none focus-visible:ring-2 focus-visible:ring-white/70"
+                      style={{ minHeight: 44, WebkitTapHighlightColor: "transparent" }}
+                    >
+                      {active && (
+                        <motion.span
+                          layoutId="view-toggle-pill"
+                          className="absolute inset-0 rounded-full bg-white"
+                          style={{ boxShadow: "0 2px 10px rgba(0,0,0,0.20)" }}
+                          transition={reduceMotion ? { duration: 0 } : SPRING}
+                        />
+                      )}
+                      <span
+                        className="relative z-10 flex items-center gap-2 transition-colors duration-200"
+                        style={{ color: active ? "#111111" : "rgba(255,255,255,0.72)" }}
+                      >
+                        <Icon size={15} strokeWidth={2.4} />
+                        {label}
+                      </span>
+                    </button>
+                  );
+                })}
               </motion.div>
             </div>
 
