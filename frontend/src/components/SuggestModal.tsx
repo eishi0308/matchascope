@@ -1,8 +1,8 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { X, Mail, Send, CheckCircle2, MessageSquarePlus } from "lucide-react";
-import { motion, AnimatePresence } from "framer-motion";
+import { useEffect, useRef, useState } from "react";
+import { X, Mail, Send, MessageSquarePlus } from "lucide-react";
+import { motion, AnimatePresence, useReducedMotion } from "framer-motion";
 import MatchaMark from "./MatchaMark";
 
 /**
@@ -14,7 +14,7 @@ import MatchaMark from "./MatchaMark";
  * path that is fully real today rather than another façade. Swap the `TO_EMAIL`
  * constant, or replace handleSubmit with a POST once a real inbox/table exists.
  */
-const TO_EMAIL = "eishi.stab@gmail.com";
+const TO_EMAIL = "eishi.sn.tech@gmail.com";
 
 interface Props {
   isOpen: boolean;
@@ -31,11 +31,30 @@ export default function SuggestModal({ isOpen, onClose, context }: Props) {
   const [message, setMessage] = useState("");
   const [contact, setContact] = useState("");
   const [sent, setSent]       = useState(false);
+  const reduce  = useReducedMotion();
+  const panelRef = useRef<HTMLDivElement>(null);
+  const returnFocusRef = useRef<HTMLElement | null>(null);
 
   // Fresh form each time the modal opens
   useEffect(() => {
     if (isOpen) { setMessage(""); setContact(""); setSent(false); }
   }, [isOpen]);
+
+  // A dialog that cannot be dismissed from the keyboard, and that drops focus into the
+  // page behind it, is a dialog half the people who open it cannot leave. Escape closes,
+  // focus moves into the panel on open, and returns to whatever opened it on close.
+  useEffect(() => {
+    if (!isOpen) return;
+    returnFocusRef.current = document.activeElement as HTMLElement | null;
+    const onKey = (e: KeyboardEvent) => { if (e.key === "Escape") onClose(); };
+    document.addEventListener("keydown", onKey);
+    const t = setTimeout(() => panelRef.current?.focus(), 40);
+    return () => {
+      document.removeEventListener("keydown", onKey);
+      clearTimeout(t);
+      returnFocusRef.current?.focus?.();
+    };
+  }, [isOpen, onClose]);
 
   const isUpdate = Boolean(context);
   const subject = isUpdate
@@ -80,9 +99,14 @@ export default function SuggestModal({ isOpen, onClose, context }: Props) {
             animate={{ opacity: 1, scale: 1, y: 0 }}
             exit={{ opacity: 0, scale: 0.92, y: 16 }}
             transition={SPRING}
-            className="relative w-full max-w-md rounded-3xl overflow-hidden"
+            className="relative w-full max-w-md rounded-3xl overflow-hidden outline-none"
             style={{ background: "#fff", boxShadow: "0 32px 96px rgba(0,0,0,0.22), 0 8px 32px rgba(0,0,0,0.12)" }}
             onClick={(e) => e.stopPropagation()}
+            ref={panelRef}
+            tabIndex={-1}
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="suggest-heading"
           >
             <div className="h-1.5 w-full bg-gradient-to-r from-matcha-700 via-matcha-500 to-matcha-300" />
 
@@ -95,6 +119,7 @@ export default function SuggestModal({ isOpen, onClose, context }: Props) {
                 transition={SPRING}
               >
                 <X size={18} />
+                <span className="sr-only">Close</span>
               </motion.button>
 
               <motion.div className="flex items-center gap-2 mb-7"
@@ -111,33 +136,94 @@ export default function SuggestModal({ isOpen, onClose, context }: Props) {
                     key="sent"
                     initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }}
                     transition={{ duration: 0.25, ease: EASE }}
-                    className="text-center py-4"
+                    role="status"
+                    aria-live="polite"
                   >
+                    {/* A ring that draws itself, closing around the mark. A tick inside a
+                        circle would claim the message was delivered; nothing here knows
+                        that — the mail client has it, and the person still has to press
+                        send. So the seal marks the handover, and the copy says the rest. */}
                     <motion.div
-                      className="w-14 h-14 rounded-full flex items-center justify-center mx-auto mb-4"
-                      style={{ background: "#e0f0d8" }}
-                      initial={{ scale: 0.6 }} animate={{ scale: 1 }} transition={SPRING}
+                      className="relative w-16 h-16 mx-auto mb-5"
+                      initial={{ scale: reduce ? 1 : 0.8 }} animate={{ scale: 1 }} transition={SPRING}
                     >
-                      <CheckCircle2 size={26} className="text-matcha-700" />
+                      <svg viewBox="0 0 64 64" className="absolute inset-0 w-full h-full -rotate-90" aria-hidden="true">
+                        <circle cx="32" cy="32" r="29" fill="none" stroke="#e0f0d8" strokeWidth="3" />
+                        <motion.circle
+                          cx="32" cy="32" r="29" fill="none" stroke="#4d9740" strokeWidth="3"
+                          strokeLinecap="round" pathLength={1} strokeDasharray={1}
+                          initial={{ strokeDashoffset: reduce ? 0 : 1 }}
+                          animate={{ strokeDashoffset: 0 }}
+                          transition={{ duration: reduce ? 0 : 0.9, ease: EASE, delay: 0.1 }}
+                        />
+                      </svg>
+                      <motion.div
+                        className="absolute inset-0 flex items-center justify-center"
+                        initial={{ opacity: reduce ? 1 : 0, scale: reduce ? 1 : 0.6 }}
+                        animate={{ opacity: 1, scale: 1 }}
+                        transition={{ delay: reduce ? 0 : 0.45, ...SPRING }}
+                      >
+                        <MatchaMark size={28} />
+                      </motion.div>
                     </motion.div>
-                    <h2 className="text-xl font-display font-semibold text-gray-900 mb-1.5">
-                      Your email app should be open
-                    </h2>
-                    <p className="text-[16px] text-gray-500 leading-relaxed mb-6">
-                      We pre-filled the message — just hit send from there. If nothing
-                      opened, email us directly at{" "}
-                      <a href={`mailto:${TO_EMAIL}`} className="text-matcha-700 font-medium hover:underline">
-                        {TO_EMAIL}
-                      </a>.
+
+                    <p className="text-center text-[12px] font-semibold uppercase tracking-[0.18em] text-matcha-600 mb-2">
+                      Thank you
                     </p>
+                    <h2 id="suggest-heading" className="text-center text-2xl font-display font-bold text-gray-900 mb-2 text-balance">
+                      This is how the map gets better.
+                    </h2>
+                    <p className="text-center text-[16px] text-gray-600 leading-relaxed mb-6 text-pretty">
+                      Your mail app is open with the message ready — press send there and
+                      it reaches us.
+                    </p>
+
+                    {/* Contributors deserve to know what happens to what they sent, and
+                        the answer here is specific: the same evidence standard every
+                        listing on the site is held to. */}
+                    <div className="rounded-2xl p-4 mb-6" style={{ background: "#f7faf5", border: "1px solid #e0f0d8" }}>
+                      <p className="text-[12px] font-semibold uppercase tracking-[0.14em] text-matcha-700 mb-3">
+                        What happens next
+                      </p>
+                      <ol className="space-y-2.5">
+                        {[
+                          "We open the cafe's own public pages and look for the claim.",
+                          "If it's there, the listing updates with the exact quote and the date we read it.",
+                          "If it isn't, the grade stands — we only publish what we can point at.",
+                        ].map((step, i) => (
+                          <motion.li
+                            key={i}
+                            className="flex gap-3 text-[15px] text-gray-700 leading-snug"
+                            initial={{ opacity: reduce ? 1 : 0, x: reduce ? 0 : -6 }}
+                            animate={{ opacity: 1, x: 0 }}
+                            transition={{ delay: reduce ? 0 : 0.55 + i * 0.08, duration: 0.3, ease: EASE }}
+                          >
+                            <span
+                              className="flex-none w-5 h-5 rounded-full grid place-items-center text-[11px] font-bold text-white mt-0.5"
+                              style={{ background: "#4d9740" }}
+                            >
+                              {i + 1}
+                            </span>
+                            <span className="text-pretty">{step}</span>
+                          </motion.li>
+                        ))}
+                      </ol>
+                    </div>
+
                     <motion.button
                       onClick={onClose}
-                      className="w-full py-3 rounded-xl font-semibold text-[16px] text-white"
+                      className="w-full py-3 rounded-xl font-semibold text-[16px] text-white focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-matcha-500 outline-none"
                       style={{ background: "linear-gradient(135deg, #2e6027 0%, #4d9740 100%)" }}
                       whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}
                     >
                       Done
                     </motion.button>
+                    <p className="text-center text-[13px] text-gray-500 mt-3">
+                      Nothing opened?{" "}
+                      <a href={`mailto:${TO_EMAIL}`} className="text-matcha-700 font-medium hover:underline">
+                        {TO_EMAIL}
+                      </a>
+                    </p>
                   </motion.div>
                 ) : (
                   <motion.div
@@ -147,7 +233,7 @@ export default function SuggestModal({ isOpen, onClose, context }: Props) {
                   >
                     <div className="flex items-center gap-2 mb-1">
                       <MessageSquarePlus size={18} className="text-matcha-700" />
-                      <h2 className="text-2xl font-display font-semibold text-gray-900">
+                      <h2 id="suggest-heading" className="text-2xl font-display font-semibold text-gray-900">
                         {isUpdate ? "Suggest an update" : "Know a cafe we missed?"}
                       </h2>
                     </div>
