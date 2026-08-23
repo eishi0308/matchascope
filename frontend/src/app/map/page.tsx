@@ -2,7 +2,7 @@
 
 import dynamic from "next/dynamic";
 import { useRouter, usePathname } from "next/navigation";
-import { useState, useMemo, useEffect, useCallback } from "react";
+import { useState, useMemo, useEffect, useCallback, useRef } from "react";
 import { Search, SlidersHorizontal, X, ChevronDown, Check, MapPin, List, Map, AlertTriangle, RefreshCw, Heart } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import Navbar from "@/components/Navbar";
@@ -55,9 +55,14 @@ const TYPE_OPTS: { value: CafeType | "All"; label: string }[] = [
 const SPRING = { type: "spring" as const, stiffness: 300, damping: 28 };
 const EASE   = [0.25, 0.46, 0.45, 0.94] as const;
 
+/**
+ * 0.04s per child is a pleasant ripple over a dozen rows and a 46-second timeline over
+ * 1,147 of them — every one of which framer still has to schedule. The whole list is
+ * never on screen at once, so the ripple only ever needs to cover the first screenful.
+ */
 const listVariants = {
   hidden: {},
-  show:   { transition: { staggerChildren: 0.04 } },
+  show:   { transition: { staggerChildren: 0.012 } },
 };
 const itemVariants = {
   hidden: { opacity: 0, y: 10 },
@@ -85,6 +90,18 @@ export default function MapPage() {
   const [sidebarOpen,  setSidebarOpen]  = useState(true);
   const [isMobile,     setIsMobile]    = useState(false);
   const [mobileView,   setMobileView]  = useState<"list" | "map">("map");
+
+  /**
+   * How many rows are actually built.
+   *
+   * The list rendered every match — 1,147 motion components mounted on the way into list
+   * view and unmounted on the way out, measured at 4.5s and 3.3s of blocked main thread on
+   * a throttled phone. Nobody can see past the first screenful, so only that is built, and
+   * the rest arrive as the reader scrolls toward them.
+   */
+  const PAGE_SIZE = 24;
+  const [visibleCount, setVisibleCount] = useState(PAGE_SIZE);
+  const sentinelRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     const check = () => setIsMobile(window.innerWidth < 768);
@@ -201,6 +218,27 @@ export default function MapPage() {
     const qs = params.toString();
     router.replace(qs ? `${pathname}?${qs}` : pathname, { scroll: false });
   }, [router, pathname]);
+
+  // A new result set is a new list: start again from the top of the window rather than
+  // keeping a deep one from the previous filter.
+  useEffect(() => { setVisibleCount(PAGE_SIZE); }, [levelFilter, cityFilter, typeFilter, query, savedOnly]);
+
+  // Grow the window as the sentinel below the last row comes into view. rootMargin gives
+  // it a screen of warning so rows exist before they are scrolled to.
+  useEffect(() => {
+    const el = sentinelRef.current;
+    if (!el) return;
+    const io = new IntersectionObserver(
+      (entries) => {
+        if (entries.some((e) => e.isIntersecting)) {
+          setVisibleCount((n) => (n >= filtered.length ? n : n + PAGE_SIZE));
+        }
+      },
+      { rootMargin: "600px 0px" }
+    );
+    io.observe(el);
+    return () => io.disconnect();
+  }, [filtered.length, visibleCount, mobileView]);
 
   // On mobile list view, tapping a cafe switches to map view then opens detail
   const handleSelectCafe = (cafe: Cafe | null) => {
@@ -353,7 +391,7 @@ export default function MapPage() {
               initial="hidden"
               animate="show"
             >
-              {filtered.map((cafe) => {
+              {filtered.slice(0, visibleCount).map((cafe) => {
                 const cfg = levelConfig[cafe.level];
                 const isSelected = selectedCafe?.id === cafe.id;
                 return (
@@ -403,6 +441,14 @@ export default function MapPage() {
                   </motion.div>
                 );
               })}
+
+              {/* Grows the window as it is approached. Also the "there is more" line —
+                  a count with nothing under it reads as a list that failed to load. */}
+              {visibleCount < filtered.length && (
+                <div ref={sentinelRef} className="py-4 text-center text-[15px] text-gray-400">
+                  {filtered.length - visibleCount} more…
+                </div>
+              )}
             </motion.div>
           )}
         </AnimatePresence>
