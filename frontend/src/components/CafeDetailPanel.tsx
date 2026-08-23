@@ -1,9 +1,9 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { X, ExternalLink, MapPin, Navigation, Calendar, Quote, Shield, Tag, Star, Maximize2 } from "lucide-react";
-import { motion, AnimatePresence } from "framer-motion";
+import { motion, AnimatePresence, useDragControls, useMotionValue, useTransform } from "framer-motion";
 import { Cafe, levelConfig } from "@/data/cafes";
 import { cafeUrl } from "@/lib/slug";
 import FavoriteButton from "./FavoriteButton";
@@ -345,8 +345,63 @@ function PanelContent({
   );
 }
 
+/** Past either of these the sheet is going away: a deliberate pull, or a quick flick. */
+const DISMISS_DISTANCE = 110;
+const DISMISS_VELOCITY = 520;
+
 export default function CafeDetailPanel({ cafe, onClose }: Props) {
   const [isMobile, setIsMobile] = useState(false);
+
+  // The sheet carried a drag handle and no drag behaviour — it looked grabbable and was
+  // not, so the only way out was the close button. Framer's own drag listener is off
+  // here and the gesture is started by hand, because the sheet's body scrolls: letting
+  // the listener see every touch would turn "scroll the page" into "throw the sheet
+  // away" the moment a finger moved down.
+  const dragControls = useDragControls();
+  const sheetY       = useMotionValue(0);
+  const scrollRef    = useRef<HTMLDivElement>(null);
+  const gestureOwned = useRef(false);
+
+  // The backdrop thins out as the sheet is pulled down, so the gesture reads as
+  // dismissing rather than as the sheet coming loose from the screen.
+  const backdropOpacity = useTransform(sheetY, [0, 400], [1, 0.15], { clamp: true });
+
+  /**
+   * Where a downward pull means "dismiss" rather than "scroll".
+   *
+   * Deciding that mid-gesture does not work: the scrolling body carries touch-action
+   * pan-y, so the browser claims the gesture on the first move and stops delivering
+   * pointermove — a handler watching for downward travel is never called again. The
+   * decision has to be made on touch-down, from where the finger landed.
+   *
+   * So the coloured header is the grab area, which is also where a thumb reaches for
+   * first, and is only live while the content sits at its top — once someone has
+   * scrolled into the listing they are reading it, and a pull is a scroll.
+   */
+  const HEADER_GRAB_PX = 170;
+
+  const maybeStartDrag = (e: React.PointerEvent) => {
+    if (gestureOwned.current) return;
+    const el = scrollRef.current;
+    if (!el || el.scrollTop > 0) return;
+    // Never swallow a press meant for the close button, the heart, or a link.
+    if ((e.target as HTMLElement).closest("button, a, input, textarea, select")) return;
+    if (e.clientY - el.getBoundingClientRect().top < HEADER_GRAB_PX) {
+      gestureOwned.current = true;
+      dragControls.start(e);
+    }
+  };
+
+  const endGesture = () => { gestureOwned.current = false; };
+
+  useEffect(() => {
+    if (!cafe) return;
+    sheetY.set(0);
+    gestureOwned.current = false;
+    const onKey = (e: KeyboardEvent) => { if (e.key === "Escape") onClose(); };
+    document.addEventListener("keydown", onKey);
+    return () => document.removeEventListener("keydown", onKey);
+  }, [cafe, onClose, sheetY]);
 
   useEffect(() => {
     const check = () => setIsMobile(window.innerWidth < 768);
@@ -364,6 +419,7 @@ export default function CafeDetailPanel({ cafe, onClose }: Props) {
             <motion.div
               key="panel-backdrop"
               className="fixed inset-0 z-[70] bg-black/30"
+              style={{ opacity: backdropOpacity }}
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
@@ -375,18 +431,44 @@ export default function CafeDetailPanel({ cafe, onClose }: Props) {
             <motion.div
               key={`mobile-${cafe.id}`}
               className="fixed bottom-0 left-0 right-0 z-[80] bg-white rounded-t-3xl overflow-hidden flex flex-col"
-              style={{ maxHeight: "88vh", boxShadow: "0 -8px 40px rgba(0,0,0,0.18)" }}
+              style={{ maxHeight: "88vh", boxShadow: "0 -8px 40px rgba(0,0,0,0.18)", y: sheetY }}
               initial={{ y: "100%" }}
               animate={{ y: 0 }}
               exit={{ y: "100%" }}
               transition={SPRING}
+              role="dialog"
+              aria-modal="true"
+              aria-label={`${cafe.name} details`}
+              drag="y"
+              dragListener={false}
+              dragControls={dragControls}
+              // Upward travel is pinned to zero: this sheet has one resting place, and a
+              // rubber-banding top edge would promise a taller state that does not exist.
+              dragConstraints={{ top: 0, bottom: 0 }}
+              dragElastic={{ top: 0, bottom: 0.55 }}
+              onDragEnd={(_, info) => {
+                gestureOwned.current = false;
+                if (info.offset.y > DISMISS_DISTANCE || info.velocity.y > DISMISS_VELOCITY) onClose();
+              }}
             >
-              {/* Drag handle */}
-              <div className="flex justify-center pt-3 pb-1 flex-shrink-0">
-                <div className="w-10 h-1 rounded-full bg-gray-200" />
+              {/* Drag handle. Its own hit area is deliberately taller than the 4px bar it
+                  draws — a grab target the size of the graphic would miss most thumbs. */}
+              <div
+                className="flex justify-center pt-3 pb-2 flex-shrink-0 cursor-grab active:cursor-grabbing"
+                style={{ touchAction: "none" }}
+                onPointerDown={(e) => { gestureOwned.current = true; dragControls.start(e); }}
+              >
+                <div className="w-10 h-1 rounded-full bg-gray-300" />
               </div>
 
-              <div className="overflow-y-auto flex-1">
+              <div
+                ref={scrollRef}
+                className="overflow-y-auto flex-1"
+                style={{ overscrollBehavior: "contain", touchAction: "pan-y" }}
+                onPointerDown={maybeStartDrag}
+                onPointerUp={endGesture}
+                onPointerCancel={endGesture}
+              >
                 <PanelContent cafe={cafe} onClose={onClose} />
               </div>
             </motion.div>
