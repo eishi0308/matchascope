@@ -431,7 +431,15 @@ export default function CafeDetailPanel({ cafe, onClose }: Props) {
             <motion.div
               key={`mobile-${cafe.id}`}
               className="fixed bottom-0 left-0 right-0 z-[80] bg-white rounded-t-3xl overflow-hidden flex flex-col"
-              style={{ maxHeight: "88vh", boxShadow: "0 -8px 40px rgba(0,0,0,0.18)", y: sheetY }}
+              // 88vh let the sheet climb to the underside of the fixed h-16 navbar, so the
+              // two read as one slab and there was nothing to show the page was still there
+              // behind it. Capped against the navbar plus a deliberate gap instead, in dvh
+              // so a phone's collapsing browser chrome cannot eat it.
+              style={{
+                maxHeight: "calc(100dvh - 4rem - 1.5rem)",
+                boxShadow: "0 -8px 40px rgba(0,0,0,0.18)",
+                y: sheetY,
+              }}
               initial={{ y: "100%" }}
               animate={{ y: 0 }}
               exit={{ y: "100%" }}
@@ -454,11 +462,15 @@ export default function CafeDetailPanel({ cafe, onClose }: Props) {
               {/* Drag handle. Its own hit area is deliberately taller than the 4px bar it
                   draws — a grab target the size of the graphic would miss most thumbs. */}
               <div
-                className="flex justify-center pt-3 pb-2 flex-shrink-0 cursor-grab active:cursor-grabbing"
-                style={{ touchAction: "none" }}
+                className="flex justify-center items-center flex-shrink-0 cursor-grab active:cursor-grabbing"
+                style={{ touchAction: "none", height: 32 }}
                 onPointerDown={(e) => { gestureOwned.current = true; dragControls.start(e); }}
+                aria-hidden="true"
               >
-                <div className="w-10 h-1 rounded-full bg-gray-300" />
+                {/* 56x6 on a 32px-tall strip. The old 40x4 bar sat at 2.5:1 against white,
+                    under the 3:1 floor a control has to meet to read as a control at all,
+                    and its grab area was barely taller than the graphic. */}
+                <div className="rounded-full" style={{ width: 56, height: 6, background: "#8b939d" }} />
               </div>
 
               <div
