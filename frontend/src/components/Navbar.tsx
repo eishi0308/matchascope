@@ -6,6 +6,19 @@ import { usePathname } from "next/navigation";
 import { Map, Info, Heart, ChevronRight, Menu, X } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import AuthModal from "./AuthModal";
+
+/**
+ * Sign-in and Get started are hidden.
+ *
+ * There is no session-aware UI behind them: nothing on the site reads auth state, and
+ * saving a cafe already works without an account because favourites live in
+ * localStorage. Two buttons that lead to a sign-up for a feature that does not gate
+ * anything are asking visitors to do work for nothing.
+ *
+ * Kept behind a switch rather than deleted, so the whole entry point comes back by
+ * setting this to true once accounts actually carry something.
+ */
+const SHOW_AUTH = false;
 import MatchaMark from "./MatchaMark";
 import { useFavoriteIds } from "@/lib/favorites";
 
@@ -114,6 +127,7 @@ export default function Navbar() {
 
           {/* Desktop actions */}
           <div className="hidden md:flex items-center gap-2.5">
+            {SHOW_AUTH && (<>
             <motion.button
               onClick={openLogin}
               className="px-4 py-2 rounded-full text-[16px] font-medium transition-colors duration-300"
@@ -141,6 +155,7 @@ export default function Navbar() {
                 <ChevronRight size={14} />
               </motion.span>
             </motion.button>
+            </>)}
           </div>
 
           {/* Mobile: hamburger button */}
@@ -204,6 +219,7 @@ export default function Navbar() {
                 ))}
               </div>
 
+              {SHOW_AUTH && (
               <div className="pt-3 mt-2 border-t border-gray-100 flex gap-2">
                 <button
                   onClick={() => { openLogin(); setMobileMenuOpen(false); }}
@@ -219,12 +235,13 @@ export default function Navbar() {
                   Get started
                 </button>
               </div>
+              )}
             </motion.div>
           )}
         </AnimatePresence>
       </motion.nav>
 
-      <AuthModal isOpen={authOpen} onClose={() => setAuthOpen(false)} defaultTab={authTab} />
+      {SHOW_AUTH && <AuthModal isOpen={authOpen} onClose={() => setAuthOpen(false)} defaultTab={authTab} />}
     </>
   );
 }
