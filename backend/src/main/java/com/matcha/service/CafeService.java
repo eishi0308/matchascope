@@ -164,7 +164,18 @@ public class CafeService {
                 if (place.website() != null) {
                     System.out.printf("[Discovery] Scraping website: %s%n", place.website());
                     scrapeResult = scraperService.scrapeWithTracking(place.website());
-                    if (scrapeResult != null) combined.append(scrapeResult.combinedText());
+                    // A shell answers 200 and yields nothing. Appending its handful of nav
+                    // words would let the grader read them as a cafe that disclosed nothing,
+                    // when in fact nothing was read at all — the distinction this method
+                    // already draws further down for blank content. Leave the text out so
+                    // the cafe takes the absent-measurement path instead of a false negative.
+                    if (scrapeResult != null && scrapeResult.looksUnread()) {
+                        System.out.printf("[Discovery] → %s returned a shell (%d chars%s) — not graded on it%n",
+                                place.website(), scrapeResult.combinedText().length(),
+                                scrapeResult.jsPlatform() != null ? ", " + scrapeResult.jsPlatform() : "");
+                    } else if (scrapeResult != null) {
+                        combined.append(scrapeResult.combinedText());
+                    }
                 }
 
                 if (place.instagram() != null) {

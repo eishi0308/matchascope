@@ -28,6 +28,23 @@ const SETTLE_MS = 1_200;
 const MAX_SUBPAGES = 10;
 
 /**
+ * How long to keep waiting for a client-side build, and what "finished" means.
+ *
+ * Waiting for a byte count cannot tell a shell's navigation from its content. Measured on
+ * a Square Online store: body text crossed 200 characters at 3.3s carrying only the nav,
+ * and the product list — the only place the origins are stated — did not paint until 4.3s.
+ * A 200-character threshold returns the chrome and calls the cafe silent. So instead of a
+ * threshold, wait for the text to stop growing: sample it, and accept it once it has held
+ * steady, which is the only signal that the build has actually finished.
+ */
+const QUIESCE_SAMPLE_MS = 400;
+const QUIESCE_STABLE_SAMPLES = 3;
+const QUIESCE_MAX_MS = 15_000;
+
+/** Words that mean the page we came for actually rendered, not just its frame. */
+const CONTENT_SIGNAL = /matcha|tencha|gyokuro|sencha|hojicha|tea|origin|sourc|blend/i;
+
+/**
  * How likely a link is to lead to a sourcing statement.
  *
  * Four pages taken in document order was too few and in the wrong order. Tea Drop states
@@ -43,6 +60,10 @@ function linkScore(href) {
   if (/(matcha|tencha|gyokuro)/.test(u)) score += 8;
   if (/(about|our-story|story|philosophy|who-we-are)/.test(u)) score += 6;
   if (/(product|products|collections|shop)/.test(u)) score += 4;
+  // Ordering paths. Square, Wix and Squarespace put the whole catalogue — and with it
+  // every origin the cafe states — behind /s/order, /store or /catalog, none of which
+  // contain a word this function used to score.
+  if (/(\/s\/|order|store|catalog|catalogue|item)/.test(u)) score += 4;
   if (/(menu|drinks|tea|beverage)/.test(u)) score += 3;
   if (/(blog|news|journal)/.test(u)) score += 1;
   // Deep product pages carry the specifics; index pages carry the names.
@@ -85,22 +106,65 @@ async function expandInstagramBio(page) {
  * <p>The wait matters more than the extraction. "domcontentloaded" fires before the
  * client-side build runs — and on a site that redirects, evaluating there throws because
  * the execution context is torn down mid-call. "networkidle" never arrives on sites that
- * poll or stream analytics. So: wait for load, then wait for text to actually appear,
- * and settle for whatever is there if it never does.
+ * poll or stream analytics. So: wait for load, then wait for the text to stop changing.
+ *
+ * <p>Text is read from every frame, not just the main document: a store embedded in an
+ * iframe is invisible to document.body.innerText. And the page is scrolled first, because
+ * a virtualised product grid only builds the rows it has been asked to show.
  */
-async function visibleText(page) {
-  try {
-    await page.waitForFunction(
-      () => (document.body?.innerText || "").trim().length > 200,
-      { timeout: SETTLE_MS * 4 }
-    );
-  } catch {
-    // A genuinely short page is not an error; take what rendered.
+async function readAllFrames(page) {
+  const parts = [];
+  for (const frame of page.frames()) {
+    try {
+      parts.push(await frame.evaluate(() => (document.body?.innerText || "")));
+    } catch {
+      // A frame that navigated mid-read is not worth failing the page for.
+    }
   }
-  return page.evaluate(() => {
+  return parts.join(" ").replace(/\s+/g, " ").trim();
+}
+
+async function settle(page) {
+  const deadline = Date.now() + QUIESCE_MAX_MS;
+  let last = -1, stable = 0;
+  while (Date.now() < deadline) {
+    let now;
+    try {
+      now = (await readAllFrames(page)).length;
+    } catch {
+      break;
+    }
+    stable = now === last ? stable + 1 : 0;
+    last = now;
+    // Hold only once the text has stopped growing AND says something on our subject —
+    // a shell's nav is stable from the first sample and would otherwise end the wait.
+    if (stable >= QUIESCE_STABLE_SAMPLES && now > 0) {
+      const text = await readAllFrames(page);
+      if (CONTENT_SIGNAL.test(text) || stable >= QUIESCE_STABLE_SAMPLES * 3) break;
+    }
+    await page.waitForTimeout(QUIESCE_SAMPLE_MS);
+  }
+}
+
+async function visibleText(page) {
+  await settle(page);
+  // Lazy grids build on scroll; do it after the first settle so the page has a layout.
+  try {
+    await page.evaluate(async () => {
+      for (let y = 0; y < 6; y++) {
+        window.scrollBy(0, window.innerHeight);
+        await new Promise((r) => setTimeout(r, 120));
+      }
+      window.scrollTo(0, 0);
+    });
+    await page.waitForTimeout(QUIESCE_SAMPLE_MS);
+  } catch {
+    // Scrolling is an optimisation; never fail the read over it.
+  }
+  await page.evaluate(() => {
     for (const el of document.querySelectorAll("script,style,noscript,svg")) el.remove();
-    return (document.body?.innerText || "").replace(/\s+/g, " ").trim();
-  });
+  }).catch(() => {});
+  return readAllFrames(page);
 }
 
 async function readSite(browser, { id, url }) {
@@ -140,8 +204,11 @@ async function readSite(browser, { id, url }) {
     );
     const candidates = [...new Set(links)]
       .filter((href) => href.startsWith(origin) && !SKIP.test(href))
+      // Zero-score links are kept as fill rather than dropped. Scoring is there to order
+      // a large site's links, not to refuse a small one: a four-link site has budget to
+      // spare, and dropping its unscored links is how a catalogue at /s/order stayed
+      // unread. Ranking still puts the promising paths first.
       .map((href) => ({ href, score: linkScore(href) }))
-      .filter((c) => c.score > 0)
       .sort((a, b) => b.score - a.score)
       .slice(0, MAX_SUBPAGES)
       .map((c) => c.href);

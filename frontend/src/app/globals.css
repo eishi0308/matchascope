@@ -192,6 +192,14 @@ body {
 .level-c { background: #f3f4f6; color: #6b7280; }
 .level-d { background: #fafafa; color: #9ca3af; }
 
+/* Line breaking. Nothing on the page set these, so every heading and paragraph
+   broke wherever the line ran out — the chapter headline stranded "label." on a
+   line of its own, and the subline under it ended on "knows.". `balance` evens
+   out heading line widths; `pretty` is the body equivalent whose whole job is
+   killing the one-word widow. Both degrade silently where unsupported. */
+h1, h2, h3 { text-wrap: balance; }
+p, li, blockquote { text-wrap: pretty; }
+
 @layer utilities {
   .text-balance { text-wrap: balance; }
   .animate-delay-100 { animation-delay: 0.1s; }

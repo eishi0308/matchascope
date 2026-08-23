@@ -12,6 +12,46 @@ import static org.junit.jupiter.api.Assertions.*;
  */
 class TransparencyGraderTest {
 
+    // ── A cafe whose disclosure only exists once the page is rendered ─────────────
+
+    @Test
+    @DisplayName("Tori's: origins stated only on a JS-built shop page grade A once the text is read")
+    void renderedShopPageGradesA() {
+        // Verbatim from the rendered /s/order page. Fetched statically the same URL returns
+        // 200 with zero occurrences of any of these words, which is why this cafe sat at D
+        // while publishing four Japanese growing regions.
+        String rendered = "Ami - Artisan Matcha Shizuoka Matcha Powder Tasting note: Nutty, sweet, "
+                + "aromatic Net 30g. A$52.00 Kai - Artisan Matcha Uji and Mie Matcha Powder "
+                + "Tasting note: Umami, balanced, buttery Net 30g. A$55.00 Mika - Artisan Matcha "
+                + "Yame, Fukuoka Matcha Powder Tasting note: Natural subtle, seaweed, aromatic Net 30g.";
+
+        TransparencyGrader.Evidence evidence = TransparencyGrader.findBestEvidence(rendered);
+        assertNotNull(evidence, "a named growing region on a shop page is a disclosure");
+        assertEquals(TransparencyLevel.A, evidence.level(),
+                "Shizuoka, Uji and Yame are named growing regions — Level A");
+    }
+
+    @Test
+    @DisplayName("A shell is not a silent cafe: 13 characters of chrome must not be gradeable")
+    void emptyShellIsNotReadable() {
+        // The entire visible text of a 77 KB Square Online homepage.
+        assertTrue(ScraperService.looksUnread("Home | Tori's"),
+                "a page whose whole text is its title was not read");
+        // A rendered shell reaches a few hundred characters of navigation before its
+        // content paints — still nothing on the subject, so still not a reading.
+        assertTrue(ScraperService.looksUnread(
+                "Home About Contact Order Online Gift Cards Careers Privacy Policy Terms of Service "
+                        + "Follow us Instagram Facebook Sign in Create account Search Cart 0 items"),
+                "navigation is not content");
+        // A cafe that really was read and really said nothing must stay gradeable.
+        assertFalse(ScraperService.looksUnread(
+                "We serve matcha lattes made with ceremonial grade matcha, sourced from our supplier. "
+                        + "Our cafe opened in 2019 and we roast our own coffee in house every week. "
+                        + "Come and try our matcha soft serve, matcha cake and iced matcha drinks today. "
+                        + "We are open seven days a week from 7am, and we welcome dogs on the terrace."),
+                "a real page that discloses nothing is a finding, not a failure to read");
+    }
+
     // ── A disclosure past the first matcha mention, in punctuation-free text ──────
 
     @Test

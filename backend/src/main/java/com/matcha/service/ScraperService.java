@@ -60,7 +60,47 @@ public class ScraperService {
         PATH_KEYWORD_SCORES.put("collection",  3);
         PATH_KEYWORD_SCORES.put("shop",        2);
         PATH_KEYWORD_SCORES.put("menu",        2);
+        // Ordering paths. Square, Wix and Squarespace keep the whole catalogue — and with
+        // it every origin a cafe states — behind /s/order, /store or /catalog. None of
+        // those contain a word this table used to hold, so the one page that named
+        // Shizuoka, Uji and Yame scored zero and was discarded before it was ever fetched.
+        PATH_KEYWORD_SCORES.put("order",       4);
+        PATH_KEYWORD_SCORES.put("/s/",         4);
+        PATH_KEYWORD_SCORES.put("store",       3);
+        PATH_KEYWORD_SCORES.put("catalog",     3);
+        PATH_KEYWORD_SCORES.put("item",        2);
     }
+
+    /**
+     * A page fetched successfully is not the same thing as a page read. Sites built in the
+     * browser answer 200 with a shell: one measured cafe returned 77 KB of HTML whose whole
+     * visible text was "Home | Tori's" — 13 characters — while its shop page stated four
+     * Japanese growing regions that no fetch-and-parse crawler can see. Graded as written,
+     * that reads as a cafe that discloses nothing. It is a cafe we failed to read, and the
+     * two must not share a label.
+     */
+    private static final int SHELL_MAX_CHARS = 150;
+
+    /**
+     * On a site known to build itself in the browser, the bar is higher: a few hundred
+     * characters of navigation is what a shell looks like once it has painted its frame.
+     * Applied only alongside a platform fingerprint, because on an ordinary site a short
+     * page is usually a short page.
+     */
+    private static final int JS_PLATFORM_MIN_CHARS = 400;
+
+    /** Something on our subject actually rendered, rather than just the page frame. */
+    private static final Pattern CONTENT_SIGNAL = Pattern.compile(
+            "matcha|tencha|gyokuro|sencha|hojicha|tea|origin|sourc|blend", Pattern.CASE_INSENSITIVE);
+
+    /**
+     * Site builders whose pages are assembled in the browser. Detected in the raw HTML of
+     * the shell — the markup names the platform even when it carries no content — so these
+     * can be sent straight to the renderer instead of being fetched twice.
+     */
+    private static final Pattern JS_PLATFORM = Pattern.compile(
+            "editmysite|squarespace|wix\\.com|wixstatic|shopify|stores\\.jp|weebly|bigcartel",
+            Pattern.CASE_INSENSITIVE);
 
     /**
      * Paths that never carry sourcing information. Excluded outright so they can
@@ -80,8 +120,42 @@ public class ScraperService {
 
     // ── Public API ─────────────────────────────────────────────────────────────
 
-    /** Result of scrapeWithTracking — combined text, per-page breakdown, and image URLs found. */
-    public record ScrapeResult(String combinedText, Map<String, String> pageTexts, List<String> imageUrls) {}
+    /**
+     * Result of scrapeWithTracking — combined text, per-page breakdown, and image URLs found.
+     *
+     * @param looksUnread the fetch succeeded but yielded no readable content: a shell, not
+     *                    a cafe that stayed silent. Callers must not grade on this text.
+     * @param jsPlatform  the site builder detected in the shell, or null. Present means the
+     *                    page is worth re-reading in a browser.
+     */
+    public record ScrapeResult(String combinedText, Map<String, String> pageTexts,
+                               List<String> imageUrls, boolean looksUnread, String jsPlatform) {
+        /** Callers that already hold rendered text and only need the shape. */
+        public ScrapeResult(String combinedText, Map<String, String> pageTexts, List<String> imageUrls) {
+            this(combinedText, pageTexts, imageUrls, false, null);
+        }
+    }
+
+    /**
+     * Whether a successful fetch actually produced something readable.
+     * Public so the coverage measurement and the triage tooling apply the same rule.
+     */
+    public static boolean looksUnread(String text) {
+        if (text == null) return true;
+        String t = text.strip();
+        // Two independent tells, and length alone is not one of them. A first attempt used
+        // a 400-character floor and failed its own test: a real page reading "we serve
+        // matcha lattes ... sourced from our supplier" is 313 characters, and calling that
+        // unread would drop a genuinely silent cafe out of the denominator and push the
+        // disclosure rate up. A cafe that said little still said it.
+        return t.length() < SHELL_MAX_CHARS || !CONTENT_SIGNAL.matcher(t).find();
+    }
+
+    /** As {@link #looksUnread(String)}, with the higher bar a known JS platform earns. */
+    public static boolean looksUnread(String text, String jsPlatform) {
+        if (looksUnread(text)) return true;
+        return jsPlatform != null && text.strip().length() < JS_PLATFORM_MIN_CHARS;
+    }
 
     /**
      * Same as scrape() but also returns a map of {pageUrl → pageText} so callers
@@ -91,6 +165,10 @@ public class ScraperService {
     public ScrapeResult scrapeWithTracking(String url) {
         Document homepage = fetchDocument(url);
         if (homepage == null) return null;
+
+        // Read the platform off the raw shell, before the markup that names it is stripped.
+        java.util.regex.Matcher platform = JS_PLATFORM.matcher(homepage.html());
+        String jsPlatform = platform.find() ? platform.group().toLowerCase() : null;
 
         // Collect links BEFORE stripping chrome: nav, header and footer are exactly where
         // "About", "Our Story" and "Sourcing" live. Stripping first made those pages
@@ -127,7 +205,9 @@ public class ScraperService {
         pageTexts.values().forEach(t -> combined.append(t).append(" "));
         String text = combined.toString().replaceAll("\\s+", " ").strip();
 
-        return new ScrapeResult(trimToBudget(text), pageTexts, allImages);
+        String finalText = trimToBudget(text);
+        return new ScrapeResult(finalText, pageTexts, allImages,
+                looksUnread(finalText, jsPlatform), jsPlatform);
     }
 
     /**
@@ -303,7 +383,11 @@ public class ScraperService {
             for (Map.Entry<String, Integer> e : PATH_KEYWORD_SCORES.entrySet()) {
                 if (path.contains(e.getKey())) score = Math.max(score, e.getValue());
             }
-            if (score > 0) scored.put(href, score);
+            // Unscored links are kept as fill rather than dropped. Scoring exists to order a
+            // large site's links, not to refuse a small one — a site with four links has
+            // budget to spare, and discarding its unscored links is exactly how a catalogue
+            // sitting at /s/order went unread. Ranking still puts the promising paths first.
+            scored.put(href, score);
         }
 
         return scored.entrySet().stream()

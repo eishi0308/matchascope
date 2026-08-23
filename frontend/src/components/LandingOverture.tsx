@@ -199,13 +199,13 @@ function Hero({ stats }: { stats: Props["stats"] }) {
   const glowY     = useTransform(scrollYProgress, [0, 1], ["0%", reduce ? "0%" : "-22%"]);
 
   const total    = stats?.total ?? 1147;
-  const verified = stats?.byLevel?.A ?? 86;
+  const verified = stats?.byLevel?.A ?? 96;
   // Same source as the disclosure card's denominator, so the hero funnel and the
   // breakdown below can never quote different totals for "we could read this".
-  const read     = stats?.assessable ?? 588;
+  const read     = stats?.assessable ?? 414;
   // Read, minus everyone who said something — A names a source, B says only
   // "Japanese matcha". What is left published nothing about origin at all.
-  const silent   = Math.max(0, read - verified - (stats?.byLevel?.B ?? 14));
+  const silent   = Math.max(0, read - verified - (stats?.byLevel?.B ?? 18));
 
   return (
     <section
@@ -477,8 +477,8 @@ function DisclosureStat({ stats }: { stats: Props["stats"] }) {
   // Same definition as the disclosure section further down the page: cafes that
   // say anything about Japanese origin (A + B), over the cafes we could read.
   // Two different figures for one fact would read as an error.
-  const named = (stats?.byLevel?.A ?? 86) + (stats?.byLevel?.B ?? 14);
-  const read  = stats?.assessable ?? 588;
+  const named = (stats?.byLevel?.A ?? 96) + (stats?.byLevel?.B ?? 18);
+  const read  = stats?.assessable ?? 414;
   const pct   = Math.round((named / read) * 100);
   const share = named / read;
 
@@ -555,7 +555,7 @@ function DisclosureStat({ stats }: { stats: Props["stats"] }) {
           {/* "The full breakdown is below" was a stage direction: the breakdown is below,
               visibly, and a line of copy spent pointing at the next scroll is a line not
               spent on the finding. */}
-          Only {stats?.byLevel?.A ?? 86} of them name a region, farm or supplier.
+          Only {stats?.byLevel?.A ?? 96} of them name a region, farm or supplier.
         </motion.p>
       </div>
     </section>

@@ -397,7 +397,7 @@ function MenuEvidenceCard() {
             ))}
           </div>
 
-          <p className="text-[16px] leading-relaxed mt-7 italic" style={{ color: "#c7c1b5" }}>
+          <p className="text-[16px] leading-relaxed mt-7 italic" style={{ color: "#786f5f" }}>
             Iced or hot · oat milk available
           </p>
         </div>
@@ -432,7 +432,7 @@ function MenuEvidenceCard() {
 
       <motion.p
         className="text-center mt-10"
-        style={{ fontSize: "16px", color: "rgba(255,255,255,0.3)" }}
+        style={{ fontSize: "16px", color: "rgba(255,255,255,0.55)" }}
         initial={{ opacity: 0 }}
         animate={inView ? { opacity: 1 } : {}}
         transition={{ duration: 0.6, delay: 2.0 }}
@@ -625,7 +625,7 @@ function PressRow({ card }: { card: typeof PRESS_CARDS[number] }) {
         className="overflow-hidden"
       >
         <div className="pb-8 pl-16 sm:pl-[4.75rem] pr-4">
-          <p className="text-[16px] text-gray-500 leading-relaxed mb-5 max-w-2xl">
+          <p className="text-[16px] text-gray-500 leading-relaxed mb-5 max-w-[65ch]">
             {card.quote}
           </p>
           <motion.a
@@ -939,7 +939,7 @@ function DisclosureBlock({ data }: { data: typeof DEFAULT_DISCLOSURE }) {
 
           <div
             className="flex items-baseline justify-between"
-            style={{ marginTop: 10, fontSize: 17, color: "var(--text-tertiary)" }}
+            style={{ marginTop: 10, fontSize: 17, color: "var(--text-secondary)" }}
           >
             <span>every cafe we found</span>
             <span style={{ fontVariantNumeric: "tabular-nums" }}>{num(everyCafe)}</span>
@@ -1110,8 +1110,8 @@ export default function HomePage() {
             </motion.div>
 
             <motion.h2
-              className="text-center font-bold leading-[1.1] tracking-tight"
-              style={{ fontSize: "clamp(1.75rem, 5vw, 3.25rem)", color: "#1c2b1a" }}
+              className="text-center font-display font-bold text-section"
+              style={{ color: "#1c2b1a" }}
               initial={{ opacity: 0, y: 24 }}
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true }}
@@ -1183,16 +1183,22 @@ export default function HomePage() {
               viewport={{ once: true }}
               transition={{ duration: 0.9, delay: 0.08, ease: EASE }}
             >
-              &ldquo;Matcha.&rdquo; That&rsquo;s the whole label.
-              <br />
-              You read{" "}
-              <span className="italic" style={{ color: "#6abf5e" }}>&ldquo;Japan&rdquo;</span> anyway.
+              {/* Two blocks rather than one line with a <br>: each sentence balances
+                  its own lines, so neither can strand a word the way "label." was. */}
+              <span className="block">&ldquo;Matcha.&rdquo; That&rsquo;s the whole label.</span>
+              <span className="block">
+                You read{" "}
+                <span className="italic" style={{ color: "#6abf5e" }}>&ldquo;Japan&rdquo;</span> anyway.
+              </span>
             </motion.h2>
 
-            {/* Subline */}
+            {/* Subline. Left-aligned, not centred: past two or three lines a centred
+                block loses the fixed left edge the eye returns to on every line. And
+                0.45 alpha measured 4.36:1 on this ground, under the 4.5:1 floor —
+                0.72 clears it at 8.9:1. */}
             <motion.p
-              className="text-center mx-auto mt-10"
-              style={{ fontSize: "clamp(1.05rem, 2.5vw, 1.35rem)", color: "rgba(255,255,255,0.45)", maxWidth: "44rem", lineHeight: 1.75 }}
+              className="mx-auto mt-10 text-left"
+              style={{ fontSize: "clamp(1.05rem, 2.5vw, 1.35rem)", color: "rgba(255,255,255,0.72)", maxWidth: "34rem", lineHeight: 1.55 }}
               initial={{ opacity: 0, y: 24 }}
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true }}
@@ -1430,7 +1436,7 @@ export default function HomePage() {
                 <p className="font-bold text-gray-900 mb-2" style={{ fontSize: "clamp(1.05rem, 2vw, 1.25rem)" }}>
                   Legal commitment: We never say &ldquo;fake&rdquo; or &ldquo;bad&rdquo;.
                 </p>
-                <p className="text-gray-500 leading-relaxed" style={{ fontSize: "clamp(1rem, 1.8vw, 1.1rem)" }}>
+                <p className="text-gray-500 leading-relaxed max-w-[65ch]" style={{ fontSize: "clamp(1rem, 1.8vw, 1.1rem)" }}>
                   We only report what cafes publicly disclose — or don&apos;t. &ldquo;No disclosure found&rdquo; is a factual observation, not an accusation. Every classification can be independently verified.
                 </p>
               </div>
@@ -1464,7 +1470,7 @@ export default function HomePage() {
               </h2>
             </Reveal>
             <Reveal delay={0.1}>
-              <p className="text-gray-400 max-w-2xl mx-auto leading-relaxed" style={{ fontSize: "clamp(1.05rem, 2.5vw, 1.3rem)" }}>
+              <p className="text-gray-500 max-w-2xl mx-auto leading-relaxed" style={{ fontSize: "clamp(1.05rem, 2.5vw, 1.3rem)" }}>
                 A strict, repeatable process with zero guesswork.
               </p>
             </Reveal>
@@ -1561,7 +1567,10 @@ export default function HomePage() {
               </h2>
               <p
                 className="max-w-2xl mx-auto mb-10 leading-relaxed"
-                style={{ fontSize: "clamp(1.05rem, 2.5vw, 1.3rem)", color: "rgba(255,255,255,0.5)" }}
+                /* 0.75, not 0.5: this card is a gradient, and against its lightest
+                   stop (#2d6025) half-opacity white measures 3.16:1 — under the floor.
+                   The heading above is fine at 7.47:1; only the body needed lifting. */
+                style={{ fontSize: "clamp(1.05rem, 2.5vw, 1.3rem)", color: "rgba(255,255,255,0.75)" }}
               >
                 Suggest a cafe or submit sourcing evidence. If the evidence checks out, they&apos;ll be added and classified.
               </p>
@@ -1595,7 +1604,7 @@ export default function HomePage() {
             <MatchaMark size={28} />
             <span className="text-[16px] font-semibold text-gray-700">MatchaScope</span>
           </div>
-          <p className="text-[16px] text-gray-400">© 2026 MatchaScope. All classifications based on publicly verifiable evidence.</p>
+          <p className="text-[16px] text-gray-500">© 2026 MatchaScope. All classifications based on publicly verifiable evidence.</p>
           <div className="flex gap-5">
             {["Privacy", "Terms", "Contact"].map((l) => (
               <span key={l} className="text-[16px] text-gray-400 hover:text-matcha-700 cursor-pointer transition-colors">{l}</span>

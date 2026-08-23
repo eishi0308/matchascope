@@ -30,9 +30,26 @@ const JOURNALS = [
   "nolink-found2.jsonl",
   "retry-blocked.jsonl",
   "ubereats.jsonl",
+  // The shell sweep: cafes whose sites answered 200 with an empty frame, re-read in a
+  // browser. Last, so where an older run recorded a cafe as simply unfetchable this run's
+  // verdict — a shell that a browser could or could not recover — supersedes it.
+  "shells-rendered.jsonl",
 ];
 
-const READABLE = 200; // characters; below this a page rendered but said nothing
+/**
+ * What counts as having read a page.
+ *
+ * A bare character count cannot tell a page from its frame. A Square Online store measured
+ * here answered 200 with 77 KB of HTML whose entire visible text was "Home | Tori's", and a
+ * rendered shell reaches a few hundred characters of navigation before its content paints —
+ * both would clear a 200-character bar while disclosing nothing readable. So the text must
+ * also mention the subject: same rule as ScraperService.looksUnread, kept in step with it.
+ */
+const SHELL_MAX = 150;   // below this the page is its own title
+const JS_PLATFORM_MIN = 400; // higher bar once a site builder is fingerprinted
+const CONTENT_SIGNAL = /matcha|tencha|gyokuro|sencha|hojicha|tea|origin|sourc|blend/i;
+
+const wasRead = (text) => (text || "").trim().length >= SHELL_MAX && CONTENT_SIGNAL.test(text || "");
 
 function load(path) {
   const out = new Map();
@@ -67,6 +84,7 @@ for (let offset = 0; ; offset += 500) {
 let read = 0;
 let blockedByLogin = 0;
 let couldNotFetch = 0;
+let unreadShell = 0;
 
 for (const cafe of cafes) {
   // A cafe graded A or B is quoting words off a page, so it was read by definition.
@@ -82,14 +100,18 @@ for (const cafe of cafes) {
   for (const journal of journals) {
     const row = journal.get(cafe.id);
     if (!row) continue;
-    if ((row.text || "").length > READABLE) {
+    if (wasRead(row.text)) {
       state = "read";
       break;
     }
-    state = row.blocked ? "blockedByLogin" : "couldNotFetch";
+    // A fetch that returned text but not readable text is a shell, not a silent cafe.
+    state = row.blocked ? "blockedByLogin"
+          : (row.text || "").trim().length > 0 ? "unreadShell"
+          : "couldNotFetch";
   }
   if (state === "read") read++;
   else if (state === "blockedByLogin") blockedByLogin++;
+  else if (state === "unreadShell") unreadShell++;
   else couldNotFetch++;
 }
 
@@ -99,6 +121,9 @@ const coverage = {
   read,
   blockedByLogin,
   couldNotFetch,
+  // Fetched successfully, rendered nothing readable. Held apart from both "read" and
+  // "couldNotFetch": these are the cafes a browser pass can still recover.
+  unreadShell,
 };
 
 writeFileSync(
