@@ -105,7 +105,7 @@ const DISCLOSURE_ROWS = [
 // field: it used to equal `bg` for the same reason and made B and D's outer border and
 // internal divider both invisible. The render derives those from a generic overlay instead.
 const LEVEL_CARDS = [
-  { level: "A", title: "Verified Japanese Disclosure", desc: "Names a specific Japanese region, farm or supplier — and links to proof.", accent: levelConfig.A.headerBg,   bg: levelConfig.A.headerBg, onDark: levelConfig.A.headerText === "#ffffff" },
+  { level: "A", title: "Verified Japanese Disclosure", desc: "Names a specific Japanese region, farm or supplier, and links to proof.", accent: levelConfig.A.headerBg,   bg: levelConfig.A.headerBg, onDark: levelConfig.A.headerText === "#ffffff" },
   { level: "B", title: "Japanese Matcha Mentioned",    desc: "Says the matcha is Japanese, but not which region, farm or supplier.",    accent: levelConfig.B.headerText, bg: levelConfig.B.headerBg, onDark: levelConfig.B.headerText === "#ffffff" },
   { level: "C", title: "No Origin Disclosure",         desc: "Serves matcha, but says nothing about where it's from.",         accent: levelConfig.C.headerBg,   bg: levelConfig.C.headerBg, onDark: levelConfig.C.headerText === "#ffffff" },
   { level: "D", title: "Insufficient Information",     desc: "Could not verify enough information across website, menu, or social media.",        accent: levelConfig.D.headerText, bg: levelConfig.D.headerBg, onDark: levelConfig.D.headerText === "#ffffff" },
@@ -114,7 +114,7 @@ const LEVEL_CARDS = [
 
 const PROBLEM_FACTS = [
   { icon: Shield,   num: "01", tag: "The Law",    phrase: "No law requires cafes to say where their matcha comes from" },
-  { icon: FileText, num: "02", tag: "The Menu",   phrase: 'So most menus just say "matcha" — not where it\'s from' },
+  { icon: FileText, num: "02", tag: "The Menu",   phrase: 'So most menus just say "matcha", never where it\'s from' },
   { icon: Search,   num: "03", tag: "The Supply", phrase: "Cheaper powder from outside Japan still sold as \"matcha\"" },
   { icon: Eye,      num: "04", tag: "The Result", phrase: "You have no way to know if it's actually from Japan" },
 ];
@@ -123,7 +123,7 @@ const HARM_CARDS = [
   {
     icon: Leaf,
     label: "The Grower",
-    text: "Honest farms in Uji and Nishio lose the premium a real harvest earns — undercut by leaf nobody can trace back to them.",
+    text: "Honest farms in Uji and Nishio lose the premium a real harvest earns, undercut by leaf nobody can trace back to them.",
     fromX: -28,
     sourceLabel: "Watch the proof",
     sourceUrl: "https://www.youtube.com/watch?v=qYh1iXaF-jI",
@@ -131,7 +131,7 @@ const HARM_CARDS = [
   {
     icon: User,
     label: "You",
-    text: "You pay ceremonial-grade prices for matcha that was never verified — and have no way to check if it's real.",
+    text: "You pay ceremonial-grade prices for matcha nobody verified, with no way to check whether it's real.",
     fromX: 28,
     sourceLabel: null,
     sourceUrl: null,
@@ -177,7 +177,7 @@ const PRESS_CARDS = [
 const HOW_IT_WORKS = [
   { icon: Search,   step: "01", title: "We Discover Cafes",        desc: "We search Google's own business listings for matcha-related cafes across Sydney and Melbourne." },
   { icon: FileText, step: "02", title: "We Verify Evidence",       desc: "Every claim is cross-checked against official websites, menu pages, about sections, and public social media. No guessing allowed." },
-  { icon: Shield,   step: "03", title: "We Classify Transparently",desc: "Each cafe receives a level A–D based solely on publicly verifiable evidence — never opinion or taste tests." },
+  { icon: Shield,   step: "03", title: "We Classify Transparently",desc: "Each cafe receives a level A–D based solely on publicly verifiable evidence. Never opinion, never taste tests." },
   { icon: Eye,      step: "04", title: "You See the Evidence",     desc: "Every listing shows the exact quote, source URL, and verification date. You can check it yourself." },
 ];
 
@@ -357,7 +357,7 @@ function MenuEvidenceCard() {
         <div className="px-10 pt-9 pb-10 rounded-2xl overflow-hidden relative" style={{ border: "1px solid rgba(0,0,0,0.07)" }}>
           <div className="flex items-center justify-between mb-7">
             <span className="text-[16px] uppercase tracking-[0.22em] font-semibold" style={{ color: "#b3ada0" }}>
-              Menu — Beverages
+              Menu · Beverages
             </span>
             <span className="text-[16px] font-semibold" style={{ color: "#d4cfc3" }}>
               Sydney, AU
@@ -437,7 +437,7 @@ function MenuEvidenceCard() {
         animate={inView ? { opacity: 1 } : {}}
         transition={{ duration: 0.6, delay: 2.0 }}
       >
-        Illustrative example — a typical Australian cafe menu
+        Illustrative example of a typical Australian cafe menu
       </motion.p>
     </div>
   );
@@ -536,7 +536,7 @@ function HarmCard({ card, index }: { card: typeof HARM_CARDS[number]; index: num
           />
         </motion.div>
         <span className="text-[16px] font-bold uppercase tracking-[0.25em]" style={{ color: "#6abf5e" }}>
-          {String(index).padStart(2, "0")} — {card.label}
+          {String(index).padStart(2, "0")} · {card.label}
         </span>
       </div>
       <p
@@ -1204,9 +1204,9 @@ export default function HomePage() {
               viewport={{ once: true }}
               transition={{ duration: 0.72, delay: 0.18, ease: EASE }}
             >
-              No law requires a country, a farm, or a grade on the label — so most cafes just leave it
-              blank, and you fill the gap yourself. Sometimes that assumption is right. Often, no one
-              — not even the cafe — actually knows.
+              No law requires a country, a farm, or a grade on the label, so most cafes leave it
+              blank and you fill the gap yourself. Sometimes that assumption is right. Often nobody
+              knows, the cafe included.
             </motion.p>
           </div>
 
@@ -1335,7 +1335,7 @@ export default function HomePage() {
                   style={{ fontSize: "16px", color: "#2e6027", background: "rgba(46,96,39,0.08)", border: "1px solid rgba(46,96,39,0.18)" }}
                 >
                   <CheckCircle2 size={13} strokeWidth={2.5} />
-                  Publicly verifiable evidence only — never taste, never guesswork
+                  Publicly verifiable evidence only. Never taste, never guesswork
                 </span>
               </div>
             </Reveal>
@@ -1437,7 +1437,7 @@ export default function HomePage() {
                   Legal commitment: We never say &ldquo;fake&rdquo; or &ldquo;bad&rdquo;.
                 </p>
                 <p className="text-gray-500 leading-relaxed max-w-[65ch]" style={{ fontSize: "clamp(1rem, 1.8vw, 1.1rem)" }}>
-                  We only report what cafes publicly disclose — or don&apos;t. &ldquo;No disclosure found&rdquo; is a factual observation, not an accusation. Every classification can be independently verified.
+                  We only report what cafes publicly disclose, or don&apos;t. &ldquo;No disclosure found&rdquo; is a factual observation, not an accusation. Every classification can be independently verified.
                 </p>
               </div>
             </motion.div>

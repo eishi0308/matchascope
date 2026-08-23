@@ -283,9 +283,9 @@ function Hero({ stats }: { stats: Props["stats"] }) {
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.7, ease: EASE_EXPO, delay: 0.75 }}
         >
-          So we read every page we could open — website, menu, socials — and quoted
-          exactly what they <span className="text-gray-900 font-medium">do</span> say.
-          Dated and linked.
+          So we read every page we could open: website, menu, socials. Then quoted
+          exactly what they <span className="text-gray-900 font-medium">do</span> say,
+          dated and linked.
         </motion.p>
 
         {/* The search field is gone — this is now a single, unambiguous CTA rather than a
