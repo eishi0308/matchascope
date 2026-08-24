@@ -14,6 +14,7 @@ import FavoriteButton from "@/components/FavoriteButton";
 import SuggestModal from "@/components/SuggestModal";
 import { Cafe, levelConfig } from "@/data/cafes";
 import { cafeUrl } from "@/lib/slug";
+import LevelScale from "@/components/LevelScale";
 
 const CafeMiniMap = dynamic(() => import("@/components/CafeMiniMap"), {
   ssr: false,
@@ -161,7 +162,7 @@ export default function CafeDetailView({ cafe, related }: { cafe: Cafe; related:
                 style={{ color: level.headerText, boxShadow: "0 2px 12px rgba(0,0,0,0.08)" }}
               >
                 <span className="w-1.5 h-1.5 rounded-full" style={{ background: level.headerText }} />
-                {unsupported ? "Under review" : `Level ${cafe.level} — ${level.label}`}
+                {unsupported ? "Under review" : `Level ${cafe.level} · ${level.shortLabel}`}
               </motion.span>
 
               <motion.h1
@@ -188,7 +189,7 @@ export default function CafeDetailView({ cafe, related }: { cafe: Cafe; related:
                 {[
                   { icon: MapPin, text: `${cafe.suburb}, ${cafe.city}` },
                   { icon: Tag, text: cafe.type.charAt(0).toUpperCase() + cafe.type.slice(1) },
-                  { icon: Star, text: `${cafe.priceRange} — ${PRICE_LABEL[cafe.priceRange]}` },
+                  { icon: Star, text: `${cafe.priceRange} · ${PRICE_LABEL[cafe.priceRange]}` },
                 ].map(({ icon: MetaIcon, text }) => (
                   <span
                     key={text}
@@ -237,6 +238,14 @@ export default function CafeDetailView({ cafe, related }: { cafe: Cafe; related:
                   </span>
                 ))}
               </div>
+            </motion.div>
+          )}
+
+          {/* The grade, on the same scale the panel shows, so it is learned once rather
+              than twice. A reader who met "D" on the map meets the identical ladder here. */}
+          {!unsupported && (
+            <motion.div variants={reveal}>
+              <LevelScale level={cafe.level} />
             </motion.div>
           )}
 

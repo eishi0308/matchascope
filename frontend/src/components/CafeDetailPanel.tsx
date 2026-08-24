@@ -8,6 +8,7 @@ import { Cafe, levelConfig } from "@/data/cafes";
 import { cafeUrl } from "@/lib/slug";
 import FavoriteButton from "./FavoriteButton";
 import SuggestModal from "./SuggestModal";
+import LevelScale from "./LevelScale";
 
 /**
  * Google Maps links. Searching by name + address lands on the business listing
@@ -105,22 +106,8 @@ function PanelContent({
           </motion.button>
         </div>
 
-        {/* Level badge */}
-        <div className="flex items-center gap-2 mb-2">
-          <motion.span
-            className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[16px] font-bold uppercase tracking-wider"
-            style={{ background: level.headerPill, color: level.headerText }}
-            initial={{ opacity: 0, scale: 0.8 }}
-            animate={{ opacity: 1, scale: 1 }}
-            transition={{ delay: 0.1, ...SPRING }}
-          >
-            <span className="w-1.5 h-1.5 rounded-full" style={{ background: level.headerText }} />
-            {unsupported ? "Under review" : `Level ${cafe.level} — ${level.shortLabel}`}
-          </motion.span>
-        </div>
-
         <motion.h2
-          className="font-display text-xl font-bold leading-snug"
+          className="font-display text-[1.4rem] font-bold leading-snug"
           style={{ color: level.headerText }}
           initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
@@ -140,6 +127,31 @@ function PanelContent({
         </motion.div>
       </motion.div>
 
+      {/* The grade, first and on white.
+          It used to be a pill on the coloured header, which works for A and B and fails
+          for D, whose header is a pale grey the badge disappears into — the one level
+          where the reader most needs telling. Here it sits on the body, shows the whole
+          scale so "D" has something to mean, and says what it means underneath. */}
+      <motion.div
+        className="px-5 pt-5"
+        initial={{ opacity: 0, y: 8 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.1, duration: 0.35, ease: EASE }}
+      >
+        {unsupported ? (
+          <div
+            className="rounded-xl px-3.5 py-3 text-[15px] leading-snug"
+            style={{ background: "#fff7ed", border: "1px solid #fed7aa", color: "#7c2d12" }}
+          >
+            <strong className="font-semibold">Under review.</strong> This cafe is graded
+            {" "}{cafe.level}, but the evidence behind it is missing, so the grade is
+            withheld rather than shown.
+          </div>
+        ) : (
+          <LevelScale level={cafe.level} size="sm" />
+        )}
+      </motion.div>
+
       {/* Staggered content */}
       <motion.div
         className="p-5 space-y-5"
@@ -147,13 +159,6 @@ function PanelContent({
         initial="hidden"
         animate="show"
       >
-        {/* Description */}
-        {cafe.description && (
-          <motion.p className="text-[16px] text-gray-600 leading-relaxed" variants={rowVariants}>
-            {cafe.description}
-          </motion.p>
-        )}
-
         {/* Meta tags */}
         <motion.div className="flex flex-wrap gap-2" variants={rowVariants}>
           <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-gray-100 text-[16px] text-gray-600">
@@ -162,28 +167,8 @@ function PanelContent({
           </span>
           <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-gray-100 text-[16px] text-gray-600">
             <Star size={11} />
-            {cafe.priceRange} — {PRICE_LABEL[cafe.priceRange]}
+            {cafe.priceRange} · {PRICE_LABEL[cafe.priceRange]}
           </span>
-        </motion.div>
-
-        {/* Specialties */}
-        <motion.div variants={rowVariants}>
-          <div className="text-[16px] uppercase tracking-widest text-gray-400 font-semibold mb-2">Specialties</div>
-          <div className="flex flex-wrap gap-1.5">
-            {cafe.specialties.map((s, i) => (
-              <motion.span
-                key={s}
-                className="px-2.5 py-1 rounded-full text-[16px] font-medium"
-                style={{ background: "#e6f4e0", color: "#2e6027" }}
-                initial={{ opacity: 0, scale: 0.8 }}
-                animate={{ opacity: 1, scale: 1 }}
-                transition={{ delay: 0.24 + i * 0.04, type: "spring", stiffness: 400, damping: 24 }}
-                whileHover={{ scale: 1.06, transition: { type: "spring", stiffness: 400, damping: 20 } }}
-              >
-                {s}
-              </motion.span>
-            ))}
-          </div>
         </motion.div>
 
         {/* Evidence panel */}
@@ -247,47 +232,21 @@ function PanelContent({
           )}
         </motion.div>
 
-        {/* Address — the block itself is the way out to Google Maps */}
-        <motion.div variants={rowVariants}>
-          <div className="text-[16px] uppercase tracking-widest text-gray-400 font-semibold mb-2">Address</div>
-          <div className="rounded-2xl border border-gray-200 overflow-hidden">
-            <div className="flex items-start gap-2.5 p-3.5">
-              <MapPin size={14} className="text-gray-400 mt-0.5 flex-shrink-0" />
-              <span className="text-[16px] text-gray-600">{cafe.address}</span>
-            </div>
-            <div className="grid grid-cols-2 border-t border-gray-200">
-              <motion.a
-                href={mapsPlaceUrl(cafe)}
-                target="_blank"
-                rel="noopener noreferrer"
-                aria-label={`Open ${cafe.name} in Google Maps`}
-                className="flex items-center justify-center gap-1.5 py-2.5 text-[16px] font-semibold text-gray-700 border-r border-gray-200"
-                whileHover={{ backgroundColor: "#f2f8f0", color: "#2e6027" } as any}
-                whileTap={{ scale: 0.97 }}
-                transition={{ duration: 0.15 }}
-              >
-                <ExternalLink size={13} />
-                Google Maps
-              </motion.a>
-              <motion.a
-                href={mapsDirectionsUrl(cafe)}
-                target="_blank"
-                rel="noopener noreferrer"
-                aria-label={`Directions to ${cafe.name} in Google Maps`}
-                className="flex items-center justify-center gap-1.5 py-2.5 text-[16px] font-semibold text-gray-700"
-                whileHover={{ backgroundColor: "#f2f8f0", color: "#2e6027" } as any}
-                whileTap={{ scale: 0.97 }}
-                transition={{ duration: 0.15 }}
-              >
-                <Navigation size={13} />
-                Directions
-              </motion.a>
-            </div>
-          </div>
-        </motion.div>
-
-        {/* External links */}
-        <motion.div className="flex gap-2 pt-1" variants={rowVariants}>
+        {/* Actions. One row, because a peek exists to answer "is this worth my time"
+            and then get out of the way. The address itself is on the full page; what a
+            reader wants from a map pin is the way there, not the street number. */}
+        <motion.div className="grid grid-cols-2 gap-2 pt-1" variants={rowVariants}>
+          <motion.a
+            href={mapsDirectionsUrl(cafe)}
+            target="_blank" rel="noopener noreferrer"
+            aria-label={`Directions to ${cafe.name} in Google Maps`}
+            className="flex items-center justify-center gap-1.5 py-2.5 rounded-xl text-[16px] font-semibold border border-gray-200 text-gray-700"
+            whileHover={{ scale: 1.03, borderColor: "#c2e1b5", color: "#2e6027", backgroundColor: "#f2f8f0" } as any}
+            whileTap={{ scale: 0.97 }}
+            transition={SPRING}
+          >
+            <Navigation size={13} />Directions
+          </motion.a>
           {cafe.website && (
             <motion.a
               href={`https://${cafe.website}`}
