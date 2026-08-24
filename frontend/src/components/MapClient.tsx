@@ -1,8 +1,9 @@
 "use client";
 
-import { useEffect, useRef } from "react";
-import { MapContainer, TileLayer, Marker, useMap } from "react-leaflet";
+import { useCallback, useEffect, useRef, useState } from "react";
+import { MapContainer, TileLayer, Marker, Circle, useMap } from "react-leaflet";
 import L from "leaflet";
+import { LocateFixed } from "lucide-react";
 import { Cafe } from "@/data/cafes";
 
 // Fix leaflet default icon in Next.js
@@ -187,6 +188,165 @@ function MapStateTracker({ city }: { city: string }) {
   return null;
 }
 
+/**
+ * "Where am I" on the map.
+ *
+ * Permission is asked for on the tap, never on load: a prompt that appears before anyone
+ * has asked for anything is the fastest way to get it denied permanently, and a denial is
+ * expensive because browsers remember it. Every outcome is spoken aloud rather than
+ * failing quietly, because a button that does nothing twice is a button nobody presses a
+ * third time — and the commonest outcome, a standing denial, cannot be fixed from inside
+ * the page, so it has to say where the setting lives.
+ */
+type LocateState = "idle" | "locating" | "found" | "error";
+
+function LocateControl({ isMobile }: { isMobile: boolean }) {
+  const map = useMap();
+  const [state, setState] = useState<LocateState>("idle");
+  const [message, setMessage] = useState<string | null>(null);
+  const [pos, setPos] = useState<{ lat: number; lng: number; accuracy: number } | null>(null);
+  const alive = useRef(true);
+  const btnRef = useRef<HTMLDivElement>(null);
+
+  // Set on mount, not only cleared on unmount: React runs effects twice in development,
+  // so a ref that is only ever cleared stays cleared after the second mount and every
+  // callback guarded by it silently does nothing.
+  useEffect(() => {
+    alive.current = true;
+    return () => { alive.current = false; };
+  }, []);
+
+  // Leaflet treats a click inside the map as a map click and would start a drag or a
+  // zoom under the button, so this subtree is taken out of its hands.
+  useEffect(() => {
+    const el = btnRef.current;
+    if (!el) return;
+    L.DomEvent.disableClickPropagation(el);
+    L.DomEvent.disableScrollPropagation(el);
+  }, []);
+
+  const locate = useCallback(() => {
+    // Geolocation is refused outright outside a secure context, which is a footgun in
+    // local development over a LAN address rather than localhost.
+    if (typeof window === "undefined" || !("geolocation" in navigator)) {
+      setState("error");
+      setMessage("This browser cannot share a location.");
+      return;
+    }
+    if (!window.isSecureContext) {
+      setState("error");
+      setMessage("Location needs a secure (https) connection.");
+      return;
+    }
+
+    // Already have a fix: re-centre rather than spend another lookup on it.
+    if (state === "found" && pos) {
+      map.flyTo([pos.lat, pos.lng], Math.max(map.getZoom(), 15), { duration: 0.7 });
+      return;
+    }
+
+    setState("locating");
+    setMessage(null);
+    navigator.geolocation.getCurrentPosition(
+      ({ coords }) => {
+        if (!alive.current) return;
+        const next = { lat: coords.latitude, lng: coords.longitude, accuracy: coords.accuracy };
+        setPos(next);
+        setState("found");
+        map.flyTo([next.lat, next.lng], Math.max(map.getZoom(), 15), { duration: 0.9 });
+      },
+      (err) => {
+        if (!alive.current) return;
+        setState("error");
+        setMessage(
+          err.code === err.PERMISSION_DENIED
+            ? "Location is blocked. Turn it on for this site in your browser settings."
+            : err.code === err.TIMEOUT
+            ? "Finding you took too long. Try again."
+            : "Could not work out where you are."
+        );
+      },
+      { enableHighAccuracy: true, timeout: 10_000, maximumAge: 60_000 }
+    );
+  }, [map, state, pos]);
+
+  // The error is worth reading once, not forever.
+  useEffect(() => {
+    if (state !== "error") return;
+    const t = setTimeout(() => { if (alive.current) { setState("idle"); setMessage(null); } }, 6000);
+    return () => clearTimeout(t);
+  }, [state]);
+
+  const label =
+    state === "locating" ? "Finding your location"
+    : state === "found"  ? "Centre on your location"
+    : "Show your location";
+
+  return (
+    <>
+      {pos && (
+        <>
+          {/* Accuracy first, so the dot sits on top of its own margin of error. */}
+          <Circle
+            center={[pos.lat, pos.lng]}
+            radius={pos.accuracy}
+            pathOptions={{ color: "#1a73e8", weight: 1, opacity: 0.35, fillColor: "#1a73e8", fillOpacity: 0.12 }}
+          />
+          <Marker
+            position={[pos.lat, pos.lng]}
+            zIndexOffset={2000}
+            icon={L.divIcon({
+              className: "ms-here",
+              html: '<span class="ms-here-pulse"></span><span class="ms-here-dot"></span>',
+              iconSize: [22, 22],
+              iconAnchor: [11, 11],
+            })}
+          />
+        </>
+      )}
+
+      <div
+        ref={btnRef}
+        className="leaflet-top leaflet-right"
+        style={{ pointerEvents: "none", top: "auto", bottom: isMobile ? 96 : 24, right: 8 }}
+      >
+        <div className="leaflet-control" style={{ pointerEvents: "auto", display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 8 }}>
+          {message && (
+            <div
+              role="status"
+              aria-live="polite"
+              className="max-w-[15rem] rounded-xl px-3 py-2 text-[15px] leading-snug"
+              style={{ background: "rgba(15,15,15,0.9)", color: "#fff", backdropFilter: "blur(8px)", boxShadow: "0 8px 24px rgba(0,0,0,0.3)" }}
+            >
+              {message}
+            </div>
+          )}
+          <button
+            type="button"
+            onClick={locate}
+            aria-label={label}
+            title={label}
+            className="grid place-items-center rounded-full bg-white outline-none focus-visible:ring-2 focus-visible:ring-matcha-500 active:scale-95 transition-transform"
+            style={{
+              width: 44, height: 44,
+              border: "1px solid rgba(0,0,0,0.10)",
+              boxShadow: "0 4px 16px rgba(0,0,0,0.20)",
+              color: state === "found" ? "#1a73e8" : "#374151",
+              WebkitTapHighlightColor: "transparent",
+            }}
+          >
+            {state === "locating" ? (
+              <span className="ms-locating" aria-hidden="true" />
+            ) : (
+              <LocateFixed size={20} strokeWidth={2.2} aria-hidden="true" />
+            )}
+          </button>
+        </div>
+      </div>
+    </>
+  );
+}
+
 interface Props {
   cafes: Cafe[];
   selectedCafe: Cafe | null;
@@ -226,6 +386,7 @@ export default function MapClient({ cafes, selectedCafe, onSelectCafe, city, isM
       <ResizeHandler />
       <SelectionMode active={!!selectedCafe} />
       <FlyTo cafe={selectedCafe} isMobile={isMobile} />
+      <LocateControl isMobile={isMobile} />
       {cafes.map((cafe) => {
         const isSelected = selectedCafe?.id === cafe.id;
         return (

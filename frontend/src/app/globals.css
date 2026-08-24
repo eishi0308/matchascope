@@ -208,3 +208,51 @@ p, li, blockquote { text-wrap: pretty; }
   .animate-delay-400 { animation-delay: 0.4s; }
   .animate-delay-500 { animation-delay: 0.5s; }
 }
+
+/* ── "You are here" ───────────────────────────────────────────────────────────
+   The blue dot is the one convention every map app shares, so it is worth
+   matching exactly rather than inventing: a solid dot, a white ring to lift it
+   off the tiles, and a slow pulse that says the position is live. The pulse is
+   decoration and stops entirely when the reader has asked for less motion. */
+.ms-here { position: relative; }
+
+.ms-here-dot {
+  position: absolute;
+  inset: 5px;
+  border-radius: 50%;
+  background: #1a73e8;
+  border: 2.5px solid #fff;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.35);
+}
+
+.ms-here-pulse {
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  background: rgba(26, 115, 232, 0.35);
+  animation: msHerePulse 2.2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+
+@keyframes msHerePulse {
+  0%   { transform: scale(0.6); opacity: 0.8; }
+  70%  { transform: scale(1.9); opacity: 0; }
+  100% { transform: scale(1.9); opacity: 0; }
+}
+
+/* The locate button's own spinner, so it does not depend on an icon library
+   having a spinning variant. */
+.ms-locating {
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  border: 2.2px solid rgba(55, 65, 81, 0.25);
+  border-top-color: #374151;
+  animation: msSpin 0.7s linear infinite;
+}
+
+@keyframes msSpin { to { transform: rotate(360deg); } }
+
+@media (prefers-reduced-motion: reduce) {
+  .ms-here-pulse { animation: none; opacity: 0.35; transform: scale(1.4); }
+  .ms-locating   { animation-duration: 2s; }
+}
