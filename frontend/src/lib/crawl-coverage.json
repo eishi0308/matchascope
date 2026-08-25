@@ -1,8 +1,8 @@
 {
-  "measuredOn": "2026-08-23",
+  "measuredOn": "2026-08-25",
   "total": 1147,
-  "read": 414,
-  "blockedByLogin": 59,
-  "couldNotFetch": 409,
-  "unreadShell": 265
+  "read": 424,
+  "blockedByLogin": 57,
+  "couldNotFetch": 392,
+  "unreadShell": 274
 }

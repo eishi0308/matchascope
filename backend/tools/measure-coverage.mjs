@@ -34,6 +34,11 @@ const JOURNALS = [
   // browser. Last, so where an older run recorded a cafe as simply unfetchable this run's
   // verdict — a shell that a browser could or could not recover — supersedes it.
   "shells-rendered.jsonl",
+  // The error-and-stub retry: cafes whose first attempt timed out, errored, or
+  // rendered under the shell threshold, given one more pass in a browser.
+  "step2-rendered.jsonl",
+  // Sites recovered by Places lookup for cafes that had no link recorded at all.
+  "recovered-rendered.jsonl",
 ];
 
 /**
