@@ -28,6 +28,30 @@ const NAV_LINKS = [
   { href: "/#how-it-works", icon: Info,  label: "How it Works" },
 ];
 
+/**
+ * The bar is three zones — lockup, links, one action — and all three are fixed.
+ *
+ * Two earlier versions of this got it wrong in opposite directions. First the
+ * action zone was left empty when Sign in / Get started were hidden, and
+ * `justify-between` centred the link row between the logo and a zero-width
+ * element: measured, 118px right of true page centre at every width, with
+ * 985px of dead space beside it at 2560.
+ *
+ * Then, fixing that, the rows were filtered by pathname so a link never pointed
+ * at the page you were on. That made the menu change shape as you moved through
+ * the site — Saved vanished the moment you opened Saved — which is worse than
+ * the problem it solved. A navigation menu is a map of the site, and a map that
+ * redraws itself depending on where you stand is not a map.
+ *
+ * So: the same two links and the same action on every page, always. The current
+ * page is marked with aria-current instead of being removed.
+ */
+const DESK_LINKS = NAV_LINKS.filter((l) => l.href !== "/map");
+
+// "Explore the map", not "Explore Map": the landing page's own hero button says
+// the former, and two spellings of one action on one screen looks unfinished.
+const CTA = { ...NAV_LINKS[0], label: "Explore the map" };
+
 const EASE = [0.25, 0.46, 0.45, 0.94] as const;
 
 export default function Navbar() {
@@ -53,6 +77,8 @@ export default function Navbar() {
 
   const light = false;
 
+  const CtaIcon = CTA.icon;
+
   return (
     <>
       <motion.nav
@@ -70,8 +96,22 @@ export default function Navbar() {
           boxShadow:    scrolled || isMap ? "0 1px 20px rgba(0,0,0,0.06)" : "none",
         }}
       >
-        {/* Full-bleed, not max-w-7xl — the lockup hugs the top-left corner */}
-        <div className="w-full px-3 sm:px-4 flex items-center justify-between h-16">
+        {/* This was full-bleed, so the lockup hugged the window's corner rather than
+            the page's. Measured on a 2688px screen that put the lockup 688px left of
+            where the content column starts and the action 688px right of where it
+            ends — the bar stopped belonging to the site under it. Same max-w-7xl and
+            px-5 as the sections, so the logo and the action now sit exactly on the
+            page's own left and right edges at every width.
+
+            No justify-between: the links belong beside the lockup, and the action is
+            pushed right by its own ml-auto. That way an empty third zone can never
+            drag the link row toward the middle again. */}
+        <div className="px-5">
+        {/* Spacing rhythm is 2:1 — 56px from the brand to the links, 28px between
+            the links. It was 36 and 24, close enough that the lockup and the nav
+            read as one run-on group instead of two things. Stripe sits at roughly
+            40/24, Vercel at 32/20; the ratio is what matters, not the absolute. */}
+        <div className="max-w-7xl mx-auto flex items-center gap-9 lg:gap-14 h-16">
 
           {/* Logo */}
           <Link href="/" className="flex items-center gap-2.5 group" onClick={() => setMobileMenuOpen(false)}>
@@ -82,51 +122,91 @@ export default function Navbar() {
             >
               <MatchaMark size={34} />
             </motion.div>
-            <div className="flex flex-col leading-none">
-              <span className="font-semibold text-[18px] tracking-tight transition-colors duration-300"
+            {/* One line, no descriptor.
+                "TRANSPARENCY MAP" used to sit under the name at 16px uppercase.
+                Two problems, and removing the line settles both at once. It was
+                #8cc47c at 2.04:1 on white, well under the 4.5:1 floor for text
+                that size. And uppercase at 16px with letter-spacing measured
+                191px wide against roughly 150px for the name above it, so the
+                descriptor was the widest thing in the lockup — the subordinate
+                line was the dominant one, and no size that clears the site's
+                16px floor fixes that.
+                A tagline is not navigation. The bar carries the name; the page
+                underneath carries the pitch, in the first sentence of the hero. */}
+            <div className="leading-none">
+              <span className="font-bold text-[20px] tracking-tight transition-colors duration-300"
                 style={{ color: light ? "#fff" : "#1a1a1a" }}
               >
                 MatchaScope
               </span>
-              <span className="hidden sm:block text-[16px] uppercase font-medium mt-0.5 transition-colors duration-300"
-                style={{ color: light ? "rgba(255,255,255,0.6)" : "#8cc47c", letterSpacing: "0.08em" }}
-              >
-                Transparency Map
-              </span>
             </div>
           </Link>
 
-          {/* Desktop nav links */}
-          <div className="hidden md:flex items-center gap-6">
-            {NAV_LINKS.map(({ href, icon: Icon, label }) => (
-              <motion.div key={href} className="relative" initial="rest" whileHover="hover" animate="rest">
+          {/* Desktop nav links — grouped against the lockup, not floating */}
+          <div className="hidden md:flex items-center gap-7">
+            {/* No icons on the text links. A heart beside "Saved" is arguable, but an
+                ⓘ beside "How it Works" states nothing the word does not, and two
+                decorative glyphs on two links is the noisiest thing in the bar. The
+                action keeps its icon, which now reads as chosen rather than as the
+                house style. */}
+            {/* No wrapper, no sliding underline. The underline animated from 0 to
+                100% width on every hover, and it spanned the count badge as well as
+                the word. None of the reference navs animate a rule under a text
+                link — Stripe, Vercel, Notion and ProPublica all just darken it, and
+                a colour shift costs no layout work and reads calmer.
+                h-11 gives each link a 44px target. It was py-1, about 26px, under
+                every touch-target guideline for something people tap on a phone. */}
+            {DESK_LINKS.map(({ href, label }) => {
+              const current = pathname === href;
+              return (
                 <Link
+                  key={href}
                   href={href}
-                  className="flex items-center gap-1.5 text-[16px] font-medium py-1 transition-colors duration-300"
-                  style={{ color: light ? "rgba(255,255,255,0.85)" : "#374151" }}
+                  // Marked, not removed. The link stays put; only its weight changes.
+                  aria-current={current ? "page" : undefined}
+                  className="group/nav flex h-11 items-center gap-1.5 text-[16px] transition-colors duration-200 focus-visible:ring-2 focus-visible:ring-matcha-500 focus-visible:ring-offset-2 outline-none rounded"
+                  style={{
+                    color: light ? "rgba(255,255,255,0.85)" : current ? "#1a1a1a" : "#374151",
+                    fontWeight: current ? 600 : 500,
+                  }}
                 >
-                  <Icon size={15} />{label}
+                  <span className="group-hover/nav:text-matcha-700 transition-colors duration-200">
+                    {label}
+                  </span>
                   {href === "/saved" && savedCount > 0 && (
                     <span
-                      className="flex items-center justify-center min-w-[16px] h-[16px] px-1 rounded-full font-semibold leading-none"
-                      style={{ background: "#dc2626", color: "#fff", fontSize: "10px" }}
+                      className="flex items-center justify-center min-w-[18px] h-[18px] px-1 rounded-full font-semibold leading-none"
+                      style={{ background: "#2e6027", color: "#fff", fontSize: "11px" }}
                     >
                       {savedCount}
                     </span>
                   )}
                 </Link>
-                <motion.span
-                  className="absolute bottom-0 left-0 h-[1.5px] rounded-full"
-                  style={{ background: light ? "rgba(255,255,255,0.7)" : "#4d9740" }}
-                  variants={{ rest: { width: "0%" }, hover: { width: "100%" } }}
-                  transition={{ duration: 0.22, ease: EASE }}
-                />
-              </motion.div>
-            ))}
+              );
+            })}
           </div>
 
-          {/* Desktop actions */}
-          <div className="hidden md:flex items-center gap-2.5">
+          {/* Desktop actions — ml-auto is what holds the right edge */}
+          <div className="hidden md:flex items-center gap-2.5 ml-auto">
+            {/* Flat fill, no gradient, no coloured glow. Every nav CTA in the
+                reference set is a flat block — Stripe, Vercel, Linear, Notion,
+                ProPublica, Our World in Data. A gradient with a tinted drop shadow
+                is the one detail here that dates the bar.
+                #2e6027 carries white at 7.45:1; the hover at #3a7a30 is 5.24:1, so
+                both states clear AA rather than only the resting one. */}
+            <motion.div whileTap={{ scale: 0.97 }}>
+              <Link
+                href={CTA.href}
+                aria-current={pathname === CTA.href ? "page" : undefined}
+                // Both states as classes. An inline `background` would beat the
+                // hover class on specificity and the hover would silently do nothing.
+                className="flex h-11 items-center gap-2 px-5 rounded-full text-[16px] font-semibold text-white bg-[#2e6027] hover:bg-[#3a7a30] transition-colors duration-200 focus-visible:ring-2 focus-visible:ring-matcha-500 focus-visible:ring-offset-2 outline-none"
+              >
+                <CtaIcon size={16} />
+                {CTA.label}
+              </Link>
+            </motion.div>
+
             {SHOW_AUTH && (<>
             <motion.button
               onClick={openLogin}
@@ -160,7 +240,7 @@ export default function Navbar() {
 
           {/* Mobile: hamburger button */}
           <motion.button
-            className="md:hidden p-2 rounded-xl -mr-1"
+            className="md:hidden p-2 rounded-xl -mr-1 ml-auto"
             onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
             whileTap={{ scale: 0.9 }}
             aria-label="Toggle menu"
@@ -180,12 +260,13 @@ export default function Navbar() {
             </AnimatePresence>
           </motion.button>
         </div>
+        </div>
 
         {/* Mobile dropdown menu — absolute so it overlays content without shifting toolbar */}
         <AnimatePresence>
           {mobileMenuOpen && (
             <motion.div
-              className="md:hidden absolute top-16 left-0 right-0 border-b border-gray-100 px-3 sm:px-4 pb-5"
+              className="md:hidden absolute top-16 left-0 right-0 border-b border-gray-100 px-5 pb-5"
               style={{
                 background: "rgba(255,255,255,0.97)",
                 backdropFilter: "blur(20px)",

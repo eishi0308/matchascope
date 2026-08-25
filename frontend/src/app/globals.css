@@ -36,6 +36,9 @@
 
 html {
   scroll-behavior: smooth;
+  /* The navbar is fixed at 64px, so an in-page jump like /#how-it-works landed
+     the heading underneath it. This is the offset every anchor target gets. */
+  scroll-padding-top: 5.5rem;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 }
