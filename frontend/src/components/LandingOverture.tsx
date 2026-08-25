@@ -24,6 +24,12 @@ import {
 } from "framer-motion";
 import { ArrowRight, ArrowDown, MapPin, Quote, ShieldCheck, ExternalLink } from "lucide-react";
 import { Cafe } from "@/data/cafes";
+// Fallback figures for the first paint, before the live stats arrive. This block
+// renders on the server, so it is what a crawler and a reader without JavaScript
+// see; hard-coding it meant the front page quoted 96 / 18 / 414 long after the
+// database held 98 / 19 / 424. measure-coverage.mjs writes this file, so one run
+// moves the fallback and the measurement together.
+import coverage from "@/lib/crawl-coverage.json";
 
 const EASE_EXPO = [0.16, 1, 0.3, 1] as const;
 const EASE_OUT  = [0.25, 0.46, 0.45, 0.94] as const;
@@ -107,7 +113,14 @@ function Counter({ value, className = "", immediate = false }: { value: number; 
   const ref     = useRef<HTMLSpanElement>(null);
   const inView  = useInView(ref, { once: true, margin: "-15%" });
   const reduce  = useReducedMotion();
-  const [shown, setShown] = useState(0);
+  // Seeded with the real figure, not 0.
+  //
+  // This block renders on the server, and starting the state at 0 meant the markup a
+  // crawler or a reader without JavaScript received said "0 say nothing", "0 say where"
+  // and "0% of cafes we could read" — the page's three headline findings, all reported as
+  // zero. The count-up still runs: the effect below is client-only, so it takes over after
+  // hydration and animates from 0 exactly as before.
+  const [shown, setShown] = useState(value);
   const start   = immediate || inView;
 
   useEffect(() => {
@@ -198,14 +211,14 @@ function Hero({ stats }: { stats: Props["stats"] }) {
   const fade      = useTransform(scrollYProgress, [0, 0.75], [1, reduce ? 1 : 0]);
   const glowY     = useTransform(scrollYProgress, [0, 1], ["0%", reduce ? "0%" : "-22%"]);
 
-  const total    = stats?.total ?? 1147;
-  const verified = stats?.byLevel?.A ?? 96;
+  const total    = stats?.total ?? coverage.total;
+  const verified = stats?.byLevel?.A ?? coverage.byLevel.A;
   // Same source as the disclosure card's denominator, so the hero funnel and the
   // breakdown below can never quote different totals for "we could read this".
-  const read     = stats?.assessable ?? 414;
+  const read     = stats?.assessable ?? coverage.read;
   // Read, minus everyone who said something — A names a source, B says only
   // "Japanese matcha". What is left published nothing about origin at all.
-  const silent   = Math.max(0, read - verified - (stats?.byLevel?.B ?? 18));
+  const silent   = Math.max(0, read - verified - (stats?.byLevel?.B ?? coverage.byLevel.B));
 
   return (
     <section
@@ -477,8 +490,8 @@ function DisclosureStat({ stats }: { stats: Props["stats"] }) {
   // Same definition as the disclosure section further down the page: cafes that
   // say anything about Japanese origin (A + B), over the cafes we could read.
   // Two different figures for one fact would read as an error.
-  const named = (stats?.byLevel?.A ?? 96) + (stats?.byLevel?.B ?? 18);
-  const read  = stats?.assessable ?? 414;
+  const named = (stats?.byLevel?.A ?? coverage.byLevel.A) + (stats?.byLevel?.B ?? coverage.byLevel.B);
+  const read  = stats?.assessable ?? coverage.read;
   const pct   = Math.round((named / read) * 100);
   const share = named / read;
 
@@ -555,7 +568,7 @@ function DisclosureStat({ stats }: { stats: Props["stats"] }) {
           {/* "The full breakdown is below" was a stage direction: the breakdown is below,
               visibly, and a line of copy spent pointing at the next scroll is a line not
               spent on the finding. */}
-          Only {stats?.byLevel?.A ?? 96} of them name a region, farm or supplier.
+          Only {stats?.byLevel?.A ?? coverage.byLevel.A} of them name a region, farm or supplier.
         </motion.p>
       </div>
     </section>

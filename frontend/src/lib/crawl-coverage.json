@@ -1,6 +1,12 @@
 {
   "measuredOn": "2026-08-25",
   "total": 1147,
+  "byLevel": {
+    "A": 98,
+    "B": 19,
+    "C": 470,
+    "D": 560
+  },
   "read": 424,
   "blockedByLogin": 57,
   "couldNotFetch": 392,

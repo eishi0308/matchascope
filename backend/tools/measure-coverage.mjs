@@ -120,9 +120,21 @@ for (const cafe of cafes) {
   else couldNotFetch++;
 }
 
+// Level counts travel with the coverage figures.
+//
+// The landing page falls back to hard-coded numbers until the live stats arrive, and
+// because that fallback renders server-side it is what a crawler or a reader without
+// JavaScript sees. Those numbers were 96 / 18 / 414 while the database held 98 / 19 / 424,
+// so the first paint quoted a finding four grades out of date. Writing them here means one
+// run of this tool keeps the fallback and the measurement in step, instead of the fallback
+// drifting quietly every time a cafe is regraded.
+const byLevel = { A: 0, B: 0, C: 0, D: 0 };
+for (const cafe of cafes) if (cafe.level in byLevel) byLevel[cafe.level]++;
+
 const coverage = {
   measuredOn: new Date().toISOString().slice(0, 10),
   total: cafes.length,
+  byLevel,
   read,
   blockedByLogin,
   couldNotFetch,
