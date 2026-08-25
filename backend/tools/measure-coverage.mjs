@@ -39,6 +39,8 @@ const JOURNALS = [
   "step2-rendered.jsonl",
   // Sites recovered by Places lookup for cafes that had no link recorded at all.
   "recovered-rendered.jsonl",
+  // The 403 sweep: cafes whose sites refused a crawler pinned to Chrome/120.
+  "blocked-rendered.jsonl",
 ];
 
 /**

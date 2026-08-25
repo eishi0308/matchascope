@@ -44,7 +44,7 @@ const JS_PLATFORM = /editmysite|squarespace|wix\.com|wixstatic|shopify|stores\.j
 
 const UA =
   "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 " +
-  "(KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36";
+  "(KHTML, like Gecko) Chrome/139.0.0.0 Safari/537.36";
 
 /** Strip markup the way the crawler does: script, style and chrome carry no sourcing text. */
 function visibleText(html) {

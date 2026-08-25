@@ -2,13 +2,13 @@
   "measuredOn": "2026-08-25",
   "total": 1147,
   "byLevel": {
-    "A": 98,
+    "A": 100,
     "B": 19,
-    "C": 470,
-    "D": 560
+    "C": 491,
+    "D": 537
   },
-  "read": 424,
+  "read": 447,
   "blockedByLogin": 57,
-  "couldNotFetch": 392,
-  "unreadShell": 274
+  "couldNotFetch": 394,
+  "unreadShell": 249
 }

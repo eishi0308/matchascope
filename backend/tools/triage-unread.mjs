@@ -31,6 +31,8 @@ const JOURNALS = [
   "ubereats.jsonl",
   "shells-rendered.jsonl",
   "step2-rendered.jsonl",
+  "recovered-rendered.jsonl",
+  "blocked-rendered.jsonl",
 ];
 
 const SHELL_MAX = 150;

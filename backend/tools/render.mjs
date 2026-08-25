@@ -169,9 +169,19 @@ async function visibleText(page) {
 
 async function readSite(browser, { id, url }) {
   const context = await browser.newContext({
+    // A current Chrome version, and it has to stay current.
+
+    // This was pinned at Chrome/120, released December 2023. Blocking outdated Chrome
+    // is a standard WAF heuristic — a real visitor's browser updates itself, so a
+    // years-old version is a bot — and 39 cafes were being served 403 Forbidden on
+    // that basis alone. They were recorded as pages that "rendered almost no text",
+    // which is what a 403 body looks like from the outside, so the crawler blamed the
+    // sites for its own fingerprint. Measured against three of them, curl's own UA got
+    // 200, Chrome/139 got 200, Safari got 200, Googlebot got 200; only Chrome/120 was
+    // refused. Bump this whenever it starts to look old.
     userAgent:
       "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 " +
-      "(KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+      "(KHTML, like Gecko) Chrome/139.0.0.0 Safari/537.36",
     viewport: { width: 1280, height: 900 },
   });
   // Images and fonts cost seconds per page and carry no text.
