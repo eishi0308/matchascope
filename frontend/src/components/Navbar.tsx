@@ -54,7 +54,18 @@ const CTA = { ...NAV_LINKS[0], label: "Explore the map" };
 
 const EASE = [0.25, 0.46, 0.45, 0.94] as const;
 
-export default function Navbar() {
+/**
+ * `onDark` is for pages that open on a dark full-bleed header, which today means a
+ * cafe page whose grade colour is dark. The bar is transparent until you scroll, so
+ * on those pages its dark text was sitting on the hero itself. Measured against each
+ * level's header colour: Level A 1.38:1 and Level C 1.36:1, both effectively
+ * invisible, and that is 561 of the 1,147 cafe pages. Level B measured 4.06:1, still
+ * under the floor for 16px text. Only Level D, at 8.33:1, was ever fine.
+ *
+ * The light treatment already existed here behind a hardcoded `const light = false`.
+ * It only ever needed a page to say when to use it.
+ */
+export default function Navbar({ onDark = false }: { onDark?: boolean } = {}) {
   const [scrolled,        setScrolled]        = useState(false);
   const [authOpen,        setAuthOpen]        = useState(false);
   const [authTab,         setAuthTab]         = useState<"login" | "signup">("login");
@@ -75,7 +86,9 @@ export default function Navbar() {
   const openLogin  = () => { setAuthTab("login");  setAuthOpen(true); };
   const openSignup = () => { setAuthTab("signup"); setAuthOpen(true); };
 
-  const light = false;
+  // Light only while the bar is genuinely over the hero. Once it turns solid white
+  // on scroll — or the mobile sheet opens behind it — dark text is the correct pair.
+  const light = onDark && !scrolled && !mobileMenuOpen;
 
   const CtaIcon = CTA.icon;
 
@@ -200,7 +213,17 @@ export default function Navbar() {
                 aria-current={pathname === CTA.href ? "page" : undefined}
                 // Both states as classes. An inline `background` would beat the
                 // hover class on specificity and the hover would silently do nothing.
-                className="flex h-11 items-center gap-2 px-5 rounded-full text-[16px] font-semibold text-white bg-[#2e6027] hover:bg-[#3a7a30] transition-colors duration-200 focus-visible:ring-2 focus-visible:ring-matcha-500 focus-visible:ring-offset-2 outline-none"
+                //
+                // The green flips to cream over a dark hero. #2e6027 against Level C's
+                // #4b5563 measures 1.02:1 — the two are almost the same luminance, so
+                // the button would have vanished into the header it sits on. Cream is
+                // 7.36:1 there and carries the green as ink instead.
+                className={
+                  "flex h-11 items-center gap-2 px-5 rounded-full text-[16px] font-semibold transition-colors duration-200 focus-visible:ring-2 focus-visible:ring-offset-2 outline-none " +
+                  (light
+                    ? "bg-[#fdfcf7] text-[#2e6027] hover:bg-white focus-visible:ring-white"
+                    : "bg-[#2e6027] text-white hover:bg-[#3a7a30] focus-visible:ring-matcha-500")
+                }
               >
                 <CtaIcon size={16} />
                 {CTA.label}

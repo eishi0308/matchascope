@@ -43,15 +43,65 @@ export default function SuggestModal({ isOpen, onClose, context }: Props) {
   // A dialog that cannot be dismissed from the keyboard, and that drops focus into the
   // page behind it, is a dialog half the people who open it cannot leave. Escape closes,
   // focus moves into the panel on open, and returns to whatever opened it on close.
+  //
+  // aria-modal alone was not enough. It tells a screen reader to ignore the rest of the
+  // page; it does nothing to Tab. Measured, six presses walked straight out of this
+  // dialog and onto MatchaScope, Saved, How it Works and Explore the map, every one of
+  // them sitting behind the scrim where nobody can see what is focused. So Tab wraps
+  // inside the panel, and everything outside it is marked inert for the duration, which
+  // is the part that also stops a pointer or a screen reader reaching the navigation.
   useEffect(() => {
     if (!isOpen) return;
     returnFocusRef.current = document.activeElement as HTMLElement | null;
-    const onKey = (e: KeyboardEvent) => { if (e.key === "Escape") onClose(); };
+
+    const FOCUSABLE =
+      'a[href],button:not([disabled]),input:not([disabled]),textarea:not([disabled]),select:not([disabled]),[tabindex]:not([tabindex="-1"])';
+
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") { onClose(); return; }
+      if (e.key !== "Tab") return;
+      const panel = panelRef.current;
+      if (!panel) return;
+      const items = Array.from(panel.querySelectorAll<HTMLElement>(FOCUSABLE))
+        .filter((el) => el.offsetParent !== null || el === document.activeElement);
+      if (!items.length) { e.preventDefault(); panel.focus(); return; }
+      const first = items[0];
+      const last  = items[items.length - 1];
+      const active = document.activeElement as HTMLElement | null;
+      if (!panel.contains(active)) { e.preventDefault(); first.focus(); return; }
+      if (e.shiftKey && active === first) { e.preventDefault(); last.focus(); }
+      else if (!e.shiftKey && active === last) { e.preventDefault(); first.focus(); }
+    };
+
+    // Everything that is not this dialog stops existing while it is open.
+    //
+    // This modal is rendered inside the page tree rather than portalled to <body>, so
+    // "mark every body child except the modal" marks nothing: the one body child
+    // contains the navigation and the dialog alike. Walking up from the panel and
+    // marking each level's siblings is the version that works wherever the dialog
+    // happens to be mounted.
+    const restore: { node: HTMLElement; inert: boolean; hidden: string | null }[] = [];
+    for (let node: HTMLElement | null = panelRef.current; node && node !== document.body; node = node.parentElement) {
+      const parent = node.parentElement;
+      if (!parent) break;
+      for (const sib of Array.from(parent.children)) {
+        if (sib === node || !(sib instanceof HTMLElement)) continue;
+        restore.push({ node: sib, inert: sib.hasAttribute("inert"), hidden: sib.getAttribute("aria-hidden") });
+        sib.setAttribute("inert", "");
+        sib.setAttribute("aria-hidden", "true");
+      }
+    }
+
     document.addEventListener("keydown", onKey);
     const t = setTimeout(() => panelRef.current?.focus(), 40);
     return () => {
       document.removeEventListener("keydown", onKey);
       clearTimeout(t);
+      restore.forEach(({ node, inert, hidden }) => {
+        if (!inert) node.removeAttribute("inert");
+        if (hidden === null) node.removeAttribute("aria-hidden");
+        else node.setAttribute("aria-hidden", hidden);
+      });
       returnFocusRef.current?.focus?.();
     };
   }, [isOpen, onClose]);
@@ -88,9 +138,13 @@ export default function SuggestModal({ isOpen, onClose, context }: Props) {
           transition={{ duration: 0.22, ease: EASE }}
           onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}
         >
+          {/* The scrim has to commit. At 0.6 the navigation behind it measured 3.11:1 —
+              too low to read, too high to be plainly switched off, so it sat in between
+              looking like a rendering fault. 0.82 drops it to 1.54:1, which reads as
+              texture rather than as text somebody might try to click. */}
           <motion.div
             className="absolute inset-0 -z-10"
-            style={{ background: "rgba(5,14,7,0.6)" }}
+            style={{ background: "rgba(5,14,7,0.82)" }}
             initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
           />
 

@@ -82,7 +82,7 @@ export default function CafeDetailView({ cafe, related }: { cafe: Cafe; related:
 
   return (
     <div className="min-h-screen bg-cream-50">
-      <Navbar />
+      <Navbar onDark={!onLight} />
       <SuggestModal
         isOpen={suggestOpen}
         onClose={() => setSuggestOpen(false)}
@@ -156,12 +156,26 @@ export default function CafeDetailView({ cafe, related }: { cafe: Cafe; related:
 
           <div className="flex items-start justify-between gap-6 flex-wrap">
             <div className="flex-1 min-w-[240px]">
+              {/* The grade is the answer this page exists to give, and it used to be
+                  the same translucent chip as the suburb and the price — four objects
+                  of identical weight, so nothing announced itself. It is solid now,
+                  and it is the only opaque thing in the hero: on a dark header a cream
+                  block carrying the level colour as ink (7.25:1 on A, 7.36:1 on C), on
+                  a light header the inverse. Everything else stays translucent and
+                  falls back to being metadata. */}
               <motion.span
                 variants={reveal}
-                className={`inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full text-[16px] font-bold uppercase tracking-wider mb-5 ${onLight ? "glass" : "glass-dark"}`}
-                style={{ color: level.headerText, boxShadow: "0 2px 12px rgba(0,0,0,0.08)" }}
+                className="inline-flex items-center gap-2.5 px-4 py-2 rounded-full text-[16px] font-bold uppercase tracking-[0.09em] mb-5"
+                style={{
+                  background: onLight ? "#1a1a18" : "#fdfcf7",
+                  color: onLight ? "#fdfcf7" : level.headerBg,
+                  boxShadow: "0 2px 16px rgba(0,0,0,0.18)",
+                }}
               >
-                <span className="w-1.5 h-1.5 rounded-full" style={{ background: level.headerText }} />
+                <span
+                  className="w-1.5 h-1.5 rounded-full"
+                  style={{ background: onLight ? "#fdfcf7" : level.headerBg }}
+                />
                 {unsupported ? "Under review" : `Level ${cafe.level} · ${level.shortLabel}`}
               </motion.span>
 
