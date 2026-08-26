@@ -172,7 +172,7 @@ let found = 0;
 async function worker() {
   const ctx = await browser.newContext({
     userAgent: "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 "
-      + "(KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+      + "(KHTML, like Gecko) Chrome/139.0.0.0 Safari/537.36",
     locale: "en-AU",
     viewport: { width: 1280, height: 900 },
   });

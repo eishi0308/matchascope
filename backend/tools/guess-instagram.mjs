@@ -81,16 +81,47 @@ function candidateHandles(cafe) {
   const suburb = words(cafe.suburb).join("");
   const lead = bases[0];
   const full = bases[bases.length - 1];
+
+  // The whole trading name, generics and all.
+  //
+  // Stripping the category word is right for the brand shapes above, and wrong on its
+  // own: "May & Mac Cafe" runs @maynmaccafe, and every shape here tried "maynmac" while
+  // the live handle simply kept the word. A cafe that puts "Cafe" in its name very often
+  // puts it in its handle too, so the unstripped join is worth one fetch.
+  const whole = raw.map((w) => (w === "and" ? "n" : w)).join("");
+
   const out = [];
   if (suburb) out.push(`${lead}.${suburb}`, `${lead}${suburb}`);
   out.push(lead);
   if (full !== lead) out.push(full);
+  if (whole !== full && whole !== lead) out.push(whole);
   if (suburb && full !== lead) out.push(`${full}.${suburb}`);
 
-  return [...new Set(out)].filter((h) => h.length >= 3 && h.length <= 30).slice(0, 5);
+  return [...new Set(out)].filter((h) => h.length >= 3 && h.length <= 30).slice(0, 6);
 }
 
 const MISSING = /page (isn'?t|not) available|sorry, this page|user not found/i;
+
+/**
+ * A profile stating that it trades in another country.
+ *
+ * Only used on the name-only attribution route, where nothing else checks location.
+ * Deliberately narrow: a mention of Japan or Italy is normal on an Australian cafe's bio
+ * and must not disqualify it, so this looks for the things a business writes about its
+ * own address — a foreign state or postcode format, a foreign dialling pattern, or a
+ * country named the way an address names one.
+ */
+const ELSEWHERE = new RegExp([
+  "\\b(?:United States|USA|U\\.S\\.A)\\b",
+  "\\b(?:California|Texas|Florida|New York|Ontario|Quebec)\\b",
+  "\\bCA\\s?\\d{5}\\b",
+  "\\(\\d{3}\\)\\s?\\d{3}-\\d{4}",
+  "\\b(?:Brasil|Brazil)\\b",
+  "\\bRestaurante\\b",
+  "\\bAv\\.\\s+[A-Z]",
+  "\\b(?:United Kingdom|London|Manchester)\\b",
+  "\\b(?:Singapore|Malaysia|Kuala Lumpur|Auckland|Toronto|Vancouver)\\b",
+].join("|"), "i");
 
 /**
  * Instagram serves the bio to an anonymous client most of the time and a login wall the
@@ -227,6 +258,17 @@ export function attribution(cafe, profileText, handle) {
   // Tea" reduces to one distinct word and so cannot reach this bar, which is why
   // @boomboomalbury stays rejected.
   if (tokens.length >= 2 && named.length === tokens.length) {
+    // ...unless the profile says outright that it is somewhere else. This route has no
+    // location test of its own, which is how @tokyodeli — "6522 Bolsa Ave, Huntington
+    // Beach, CA, United States" — was attributed to a cafe in Elsternwick, and a
+    // "Restaurante Japones" on Av. Carlos Drummond de Andrade to one in Melbourne. Both
+    // carry the whole trading name, because the name is the thing two businesses on
+    // opposite sides of the world are most likely to share. Requiring positive proof of
+    // Australia would be too strict — plenty of real bios give hours and nothing else —
+    // but a bio that names another country has already answered the question.
+    if (ELSEWHERE.test(bioText)) {
+      return { ok: false, why: `profile places itself outside Australia (${bioText.match(ELSEWHERE)[0]})` };
+    }
     return { ok: true, why: "profile text carries the whole business name" };
   }
 
@@ -275,7 +317,7 @@ async function worker() {
   const ctx = await browser.newContext({
     userAgent:
       "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 " +
-      "(KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+      "(KHTML, like Gecko) Chrome/139.0.0.0 Safari/537.36",
     locale: "en-AU",
     viewport: { width: 1280, height: 900 },
   });
