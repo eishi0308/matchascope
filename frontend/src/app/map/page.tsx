@@ -3,7 +3,7 @@
 import dynamic from "next/dynamic";
 import { useRouter, usePathname } from "next/navigation";
 import { useState, useMemo, useEffect, useCallback, useRef } from "react";
-import { Search, SlidersHorizontal, X, ChevronDown, Check, MapPin, List, Map, AlertTriangle, RefreshCw, Heart } from "lucide-react";
+import { Search, X, ChevronDown, ChevronLeft, ChevronRight, Check, MapPin, List, Map, AlertTriangle, RefreshCw, Heart } from "lucide-react";
 import { motion, AnimatePresence, useReducedMotion } from "framer-motion";
 import Navbar from "@/components/Navbar";
 import CafeDetailPanel from "@/components/CafeDetailPanel";
@@ -53,6 +53,12 @@ const TYPE_OPTS: { value: CafeType | "All"; label: string }[] = [
 ];
 
 const SPRING = { type: "spring" as const, stiffness: 300, damping: 28 };
+
+/** One source for the panel width — the panel, the edge tab and the map all key off it. */
+const SIDEBAR_W = 300;
+
+/** Survives navigating to a cafe and back, the way the map's own position does. */
+const SIDEBAR_KEY = "matcha_map_sidebar";
 const EASE   = [0.25, 0.46, 0.45, 0.94] as const;
 
 /**
@@ -88,6 +94,13 @@ export default function MapPage() {
   const [selectedCafe, setSelectedCafe] = useState<Cafe | null>(null);
   const [pendingCafeId, setPendingCafeId] = useState<string | null>(null);
   const [sidebarOpen,  setSidebarOpen]  = useState(true);
+  /**
+   * A zero-width element with clipped overflow is still in the tab order, so a collapsed
+   * panel would silently swallow a dozen tab stops on the way to the map. Visibility is
+   * what actually removes it, and it can only be applied once the collapse has finished —
+   * applied at the start it would blank the panel mid-slide.
+   */
+  const [panelHidden,  setPanelHidden]  = useState(false);
   const [isMobile,     setIsMobile]    = useState(false);
   const [mobileView,   setMobileView]  = useState<"list" | "map">("map");
   const reduceMotion = useReducedMotion();
@@ -103,6 +116,47 @@ export default function MapPage() {
   const PAGE_SIZE = 24;
   const [visibleCount, setVisibleCount] = useState(PAGE_SIZE);
   const sentinelRef = useRef<HTMLDivElement>(null);
+
+  const toggleSidebar = useCallback(() => setSidebarOpen((v) => !v), []);
+
+  // Re-enter the tab order the moment it starts opening, not when it lands.
+  useEffect(() => {
+    if (sidebarOpen) setPanelHidden(false);
+  }, [sidebarOpen]);
+
+  useEffect(() => {
+    try {
+      const saved = sessionStorage.getItem(SIDEBAR_KEY);
+      if (saved !== null) setSidebarOpen(saved === "1");
+    } catch {
+      /* private mode — the panel just starts open */
+    }
+  }, []);
+
+  useEffect(() => {
+    try {
+      sessionStorage.setItem(SIDEBAR_KEY, sidebarOpen ? "1" : "0");
+    } catch {
+      /* nothing to remember it with */
+    }
+  }, [sidebarOpen]);
+
+  /**
+   * "[" collapses the panel, the shortcut Google Maps and every editor sidebar use.
+   * Guarded against firing while the reader is typing a cafe name into the search box.
+   */
+  useEffect(() => {
+    if (isMobile) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key !== "[" || e.metaKey || e.ctrlKey || e.altKey) return;
+      const el = e.target as HTMLElement | null;
+      if (el && (el.tagName === "INPUT" || el.tagName === "TEXTAREA" || el.isContentEditable)) return;
+      e.preventDefault();
+      toggleSidebar();
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [isMobile, toggleSidebar]);
 
   useEffect(() => {
     const check = () => setIsMobile(window.innerWidth < 768);
@@ -252,7 +306,7 @@ export default function MapPage() {
 
   // Shared list panel content (used in desktop sidebar + mobile full-screen list)
   const renderListContent = (compact = false) => (
-    <div className={compact ? "w-full" : "w-[300px]"}>
+    <div className={compact ? "w-full" : ""} style={compact ? undefined : { width: SIDEBAR_W }}>
       {/* Level legend */}
       <motion.div
         className="p-4 border-b border-gray-100"
@@ -756,29 +810,55 @@ export default function MapPage() {
           /* ── DESKTOP LAYOUT: sidebar + map side by side ─────────── */
           <>
             {/* Sidebar */}
-            <motion.div
-              className="flex-shrink-0 overflow-y-auto border-r border-gray-100 bg-white"
-              animate={{ width: sidebarOpen ? 300 : 0 }}
-              transition={SPRING}
+            <motion.aside
+              id="cafe-list-panel"
+              aria-label="Cafe results"
+              aria-hidden={!sidebarOpen}
+              className="flex-shrink-0 overflow-y-auto overflow-x-hidden border-r border-gray-100 bg-white"
+              animate={{ width: sidebarOpen ? SIDEBAR_W : 0 }}
+              transition={reduceMotion ? { duration: 0 } : SPRING}
+              onAnimationComplete={() => { if (!sidebarOpen) setPanelHidden(true); }}
+              style={{ visibility: panelHidden ? "hidden" : "visible" }}
             >
               {renderListContent(false)}
-            </motion.div>
+            </motion.aside>
 
-            {/* Sidebar toggle */}
+            {/*
+              The collapse control, on the panel's own edge rather than floating at the
+              bottom of the screen.
+
+              It used to be a labelled "Hide" / "List" pill down in the corner, which asked
+              the reader to look somewhere other than the thing it operates and read a word
+              to find out which way it would go. A map is looked at in the middle, so the
+              control sits at the vertical middle of the seam it moves, and says which way
+              with an arrow instead of a noun — the same grammar Google Maps, Finder and
+              every editor sidebar use, so it needs no learning.
+
+              It stays narrow, and widens by four pixels on hover: enough to register as
+              live under the cursor without becoming a second thing competing with the map.
+            */}
             <motion.button
-              onClick={() => setSidebarOpen(!sidebarOpen)}
-              className="absolute bottom-6 z-[60] flex items-center gap-1.5 px-3 py-2 rounded-r-xl text-[16px] font-medium bg-white border border-l-0 border-gray-200 text-gray-600 hover:bg-gray-50 shadow-sm"
-              animate={{ left: sidebarOpen ? 300 : 0 }}
-              transition={SPRING}
-              whileHover={{ paddingRight: "14px" }}
-              whileTap={{ scale: 0.96 }}
+              onClick={toggleSidebar}
+              aria-expanded={sidebarOpen}
+              aria-controls="cafe-list-panel"
+              aria-label={sidebarOpen ? "Hide the results list" : "Show the results list"}
+              title={sidebarOpen ? "Collapse side panel  ( [ )" : "Expand side panel  ( [ )"}
+              className="absolute top-1/2 z-[60] flex items-center justify-center h-14 -translate-y-1/2 rounded-r-lg bg-white border border-l-0 border-gray-200 text-gray-400 hover:text-gray-900 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-matcha-500"
+              style={{ boxShadow: "2px 0 8px rgba(0,0,0,0.06)" }}
+              animate={{ left: sidebarOpen ? SIDEBAR_W : 0, width: 22 }}
+              whileHover={{ width: 26 }}
+              whileTap={{ scale: 0.94 }}
+              transition={reduceMotion ? { duration: 0 } : SPRING}
             >
-              <SlidersHorizontal size={13} />
-              {sidebarOpen ? "Hide" : "List"}
+              {sidebarOpen ? <ChevronLeft size={16} strokeWidth={2.5} /> : <ChevronRight size={16} strokeWidth={2.5} />}
             </motion.button>
 
-            {/* Map */}
-            <div className="flex-1 relative overflow-hidden">
+            {/* Map — z-[1] creates a stacking context so Leaflet's internal pane z-indices
+                (tilePane 200 … controlPane 800) stay scoped to the map instead of leaking
+                out and covering the collapse tab beside it. The mobile branch above already
+                does this; the desktop branch never did, so anything overlaying the seam was
+                only clickable by luck. */}
+            <div className="flex-1 relative overflow-hidden z-[1]">
               <MapClient
                 cafes={filtered}
                 selectedCafe={selectedCafe}
@@ -790,7 +870,11 @@ export default function MapPage() {
               <AnimatePresence>
                 {!sidebarOpen && (
                   <motion.div
-                    className="absolute bottom-5 right-5 z-[50]"
+                    /* Above Leaflet's own panes, which run to 800 on the control pane.
+                       At z-50 this sat under the tiles: present, opaque, and invisible.
+                       Bottom-left because the locate button already owns the bottom-right
+                       corner, and because it is the corner the collapsed panel vacated. */
+                    className="absolute bottom-5 left-5 z-[1000]"
                     initial={{ opacity: 0, y: 8, scale: 0.95 }}
                     animate={{ opacity: 1, y: 0, scale: 1 }}
                     exit={{ opacity: 0, y: 8, scale: 0.95 }}
