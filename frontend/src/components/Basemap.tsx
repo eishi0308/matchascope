@@ -59,6 +59,42 @@ function VectorBasemap() {
     // MapLibre draws its own attribution box; Leaflet already has one, and on the
     // mini map both are suppressed, so the credit goes through Leaflet's control.
     const layer = L.maplibreGL({ style: STYLE_URL, attributionControl: false });
+
+    /**
+     * The plugin answers a Leaflet "resize" by deferring the real work to the next
+     * animation frame, and that deferred body reads this._map. Remove the layer in
+     * between — a route change, or a dev fast-refresh remount, both of which can land
+     * between a resize and the frame it booked — and _map is already null by the time
+     * the frame runs:
+     *
+     *   TypeError: Cannot read properties of null (reading 'getZoom')
+     *
+     * The collapsing side panel made this easy to hit, because the panel's spring
+     * streams resize events for the length of the animation, so there is nearly always
+     * a frame in flight while the reader is clicking through to a cafe.
+     *
+     * There is exactly one such deferral in the plugin, so the frame it books is
+     * wrapped in a liveness check rather than the surrounding method being rewritten,
+     * which would mean copying vendor internals we would then have to keep in step.
+     * The swap is synchronous and restored in `finally`, so nothing else can observe it.
+     */
+    const patched = layer as unknown as { _map: unknown; _transitionEnd: (e: unknown) => void };
+    const transitionEnd = patched._transitionEnd;
+    patched._transitionEnd = function (this: unknown, e: unknown) {
+      const scheduleFrame = L.Util.requestAnimFrame;
+      L.Util.requestAnimFrame = function (fn: (...a: never[]) => void, context?: unknown) {
+        return scheduleFrame(function (this: unknown) {
+          if (!patched._map) return; // the layer was removed before this frame ran
+          return fn.apply(this, [] as never[]);
+        }, context);
+      } as typeof L.Util.requestAnimFrame;
+      try {
+        transitionEnd.call(this, e);
+      } finally {
+        L.Util.requestAnimFrame = scheduleFrame;
+      }
+    };
+
     layer.addTo(map);
     map.attributionControl?.addAttribution(VECTOR_ATTRIBUTION);
 
