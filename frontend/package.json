@@ -9,11 +9,13 @@
     "lint": "next lint"
   },
   "dependencies": {
+    "@maplibre/maplibre-gl-leaflet": "^0.1.4",
     "@supabase/supabase-js": "^2.110.1",
     "clsx": "^2.1.1",
     "framer-motion": "^11.2.10",
     "leaflet": "^1.9.4",
     "lucide-react": "^0.383.0",
+    "maplibre-gl": "^4.7.1",
     "next": "14.2.3",
     "react": "^18",
     "react-dom": "^18",

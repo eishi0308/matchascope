@@ -1,7 +1,8 @@
 "use client";
 
 import { useEffect } from "react";
-import { MapContainer, TileLayer, Marker } from "react-leaflet";
+import { MapContainer, Marker } from "react-leaflet";
+import Basemap from "./Basemap";
 import L from "leaflet";
 
 /**
@@ -63,7 +64,7 @@ export default function CafeMiniMap({ lat, lng, levelColor }: Props) {
       keyboard={false}
       attributionControl={false}
     >
-      <TileLayer url="https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png" />
+      <Basemap />
       <Marker position={[lat, lng]} icon={pinIcon(levelColor)} interactive={false} />
     </MapContainer>
   );

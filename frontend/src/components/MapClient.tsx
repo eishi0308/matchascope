@@ -1,10 +1,11 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
-import { MapContainer, TileLayer, Marker, Circle, useMap } from "react-leaflet";
+import { MapContainer, Marker, Circle, useMap } from "react-leaflet";
 import L from "leaflet";
 import { LocateFixed } from "lucide-react";
 import { Cafe } from "@/data/cafes";
+import Basemap from "./Basemap";
 
 // Fix leaflet default icon in Next.js
 function fixLeafletIcon() {
@@ -378,10 +379,7 @@ export default function MapClient({ cafes, selectedCafe, onSelectCafe, city, isM
       style={{ width: "100%", height: "100%" }}
       zoomControl={false}
     >
-      <TileLayer
-        attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
-        url="https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png"
-      />
+      <Basemap />
       <MapStateTracker city={city} />
       <ResizeHandler />
       <SelectionMode active={!!selectedCafe} />
