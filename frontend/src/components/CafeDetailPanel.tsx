@@ -6,6 +6,7 @@ import { X, ExternalLink, MapPin, Navigation, Calendar, Quote, Shield, Tag, Star
 import { motion, AnimatePresence, useDragControls, useMotionValue, useTransform } from "framer-motion";
 import { Cafe, levelConfig } from "@/data/cafes";
 import { cafeUrl } from "@/lib/slug";
+import { externalUrl } from "@/lib/links";
 import FavoriteButton from "./FavoriteButton";
 import SuggestModal from "./SuggestModal";
 import LevelScale from "./LevelScale";
@@ -74,6 +75,10 @@ function PanelContent({
   // static value would lose once the entrance animation finished.
   const headerTextMuted = onLight ? `${level.headerText}b8` : "rgba(255,255,255,0.72)";
   const [suggestOpen, setSuggestOpen] = useState(false);
+  // Stored hosts are bare ("www.frenchsfair.com"), which a browser reads as a path
+  // relative to this app, not as a site. Every outbound href goes through externalUrl.
+  const evidenceHref = externalUrl(cafe.evidence?.source);
+  const websiteHref = externalUrl(cafe.website);
 
   return (
     <>
@@ -197,16 +202,22 @@ function PanelContent({
                   <Calendar size={12} className="text-matcha-600 flex-shrink-0" />
                   <span className="text-[16px] text-gray-500">Verified {cafe.evidence.verifiedDate}</span>
                 </div>
-                <motion.a
-                  href={cafe.evidence.source}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="inline-flex items-center gap-1.5 text-[16px] font-medium text-matcha-700 mt-1"
-                  whileHover={{ x: 3, color: "#1e4a1a" } as any}
-                  transition={{ duration: 0.15 }}
-                >
-                  View source <ExternalLink size={11} />
-                </motion.a>
+                {evidenceHref ? (
+                  <motion.a
+                    href={evidenceHref}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-flex items-center gap-1.5 text-[16px] font-medium text-matcha-700 mt-1"
+                    whileHover={{ x: 3, color: "#1e4a1a" } as any}
+                    transition={{ duration: 0.15 }}
+                  >
+                    View source <ExternalLink size={11} />
+                  </motion.a>
+                ) : (
+                  <span className="inline-flex items-center gap-1.5 text-[16px] text-gray-400 mt-1">
+                    Source link unavailable
+                  </span>
+                )}
               </div>
             </motion.div>
           ) : unsupported ? (
@@ -247,9 +258,9 @@ function PanelContent({
           >
             <Navigation size={13} />Directions
           </motion.a>
-          {cafe.website && (
+          {websiteHref && (
             <motion.a
-              href={`https://${cafe.website}`}
+              href={websiteHref}
               target="_blank" rel="noopener noreferrer"
               className="flex-1 flex items-center justify-center gap-1.5 py-2.5 rounded-xl text-[16px] font-semibold border border-gray-200 text-gray-700"
               whileHover={{ scale: 1.03, borderColor: "#c2e1b5", color: "#2e6027", backgroundColor: "#f2f8f0" } as any}

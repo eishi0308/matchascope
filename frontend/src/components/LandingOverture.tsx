@@ -24,6 +24,7 @@ import {
 } from "framer-motion";
 import { ArrowRight, ArrowDown, MapPin, Quote, ShieldCheck, ExternalLink } from "lucide-react";
 import { Cafe } from "@/data/cafes";
+import { externalUrl } from "@/lib/links";
 // Fallback figures for the first paint, before the live stats arrive. This block
 // renders on the server, so it is what a crawler and a reader without JavaScript
 // see; hard-coding it meant the front page quoted 96 / 18 / 414 long after the
@@ -750,9 +751,9 @@ function FeaturedCafes({ verified }: { verified: Cafe[] }) {
                   &ldquo;{c.evidence!.quote}&rdquo;
                 </p>
                 <div className="mt-4 pt-4" style={{ borderTop: "1px solid #f0f0f0" }}>
-                  {c.evidence!.source ? (
+                  {externalUrl(c.evidence!.source) ? (
                     <a
-                      href={c.evidence!.source}
+                      href={externalUrl(c.evidence!.source)!}
                       target="_blank"
                       rel="noopener noreferrer"
                       onClick={(e) => e.stopPropagation()}

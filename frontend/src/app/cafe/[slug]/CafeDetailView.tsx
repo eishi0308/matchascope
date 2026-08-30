@@ -14,6 +14,7 @@ import FavoriteButton from "@/components/FavoriteButton";
 import SuggestModal from "@/components/SuggestModal";
 import { Cafe, levelConfig } from "@/data/cafes";
 import { cafeUrl } from "@/lib/slug";
+import { externalUrl } from "@/lib/links";
 import LevelScale from "@/components/LevelScale";
 
 const CafeMiniMap = dynamic(() => import("@/components/CafeMiniMap"), {
@@ -79,6 +80,10 @@ export default function CafeDetailView({ cafe, related }: { cafe: Cafe; related:
   const unsupported = (cafe.level === "A" || cafe.level === "B") && !cafe.evidence;
   const onLight = level.headerText !== "#ffffff";
   const [suggestOpen, setSuggestOpen] = useState(false);
+  // Stored hosts are bare ("www.frenchsfair.com"), which a browser reads as a path
+  // relative to this app, not as a site. Every outbound href goes through externalUrl.
+  const evidenceHref = externalUrl(cafe.evidence?.source);
+  const websiteHref = externalUrl(cafe.website);
 
   return (
     <div className="min-h-screen bg-cream-50">
@@ -287,13 +292,19 @@ export default function CafeDetailView({ cafe, related }: { cafe: Cafe; related:
                     <Calendar size={13} className="text-matcha-600 flex-shrink-0" />
                     <span className="text-[16px] text-gray-500">Verified {cafe.evidence.verifiedDate}</span>
                   </div>
-                  <a
-                    href={cafe.evidence.source}
-                    target="_blank" rel="noopener noreferrer"
-                    className="inline-flex items-center gap-1.5 text-[16px] font-semibold text-matcha-700 mt-1.5 hover:text-matcha-900 transition-colors"
-                  >
-                    View primary source <ExternalLink size={12} />
-                  </a>
+                  {evidenceHref ? (
+                    <a
+                      href={evidenceHref}
+                      target="_blank" rel="noopener noreferrer"
+                      className="inline-flex items-center gap-1.5 text-[16px] font-semibold text-matcha-700 mt-1.5 hover:text-matcha-900 transition-colors"
+                    >
+                      View primary source <ExternalLink size={12} />
+                    </a>
+                  ) : (
+                    <span className="inline-flex items-center gap-1.5 text-[16px] text-gray-400 mt-1.5">
+                      Source link unavailable
+                    </span>
+                  )}
                 </div>
               </div>
             ) : unsupported ? (
@@ -360,9 +371,9 @@ export default function CafeDetailView({ cafe, related }: { cafe: Cafe; related:
           </motion.div>
 
           <motion.div variants={reveal} className="flex gap-2">
-            {cafe.website && (
+            {websiteHref && (
               <a
-                href={`https://${cafe.website}`} target="_blank" rel="noopener noreferrer"
+                href={websiteHref} target="_blank" rel="noopener noreferrer"
                 className="flex-1 flex items-center justify-center gap-1.5 py-2.5 rounded-xl text-[16px] font-semibold border border-gray-200 text-gray-700 hover:border-matcha-200 hover:text-matcha-700 hover:bg-matcha-50 transition-colors"
               >
                 <ExternalLink size={13} />Website

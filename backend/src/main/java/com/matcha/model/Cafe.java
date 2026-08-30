@@ -92,7 +92,31 @@ public class Cafe {
     public void setEvidenceQuote(String evidenceQuote) { this.evidenceQuote = evidenceQuote; }
 
     public String getEvidenceSource() { return evidenceSource; }
-    public void setEvidenceSource(String evidenceSource) { this.evidenceSource = evidenceSource; }
+
+    /**
+     * Evidence sources are stored absolute, always.
+     *
+     * Callers pass through whatever the upstream listing held, and a good share of those
+     * are bare hosts — OpenStreetMap website tags in particular are usually written
+     * "www.example.com", and place.website() is the fallback when the exact quote page
+     * cannot be located. A bare host is not a link in an href: the browser resolves it
+     * against the app's own origin, so "View source" delivered the reader to our own 404
+     * instead of the cafe's proof. Since the entire promise of a grade here is "go and
+     * read the evidence yourself", normalising on write keeps that promise from being
+     * broken by the shape of a field we do not control.
+     */
+    public void setEvidenceSource(String evidenceSource) { this.evidenceSource = absoluteUrl(evidenceSource); }
+
+    /** "www.example.com" -> "https://www.example.com"; already-absolute URLs pass through. */
+    private static String absoluteUrl(String url) {
+        if (url == null) return null;
+        String trimmed = url.strip();
+        if (trimmed.isEmpty()) return null;
+        if (trimmed.regionMatches(true, 0, "http://", 0, 7)
+                || trimmed.regionMatches(true, 0, "https://", 0, 8)) return trimmed;
+        if (trimmed.startsWith("//")) return "https:" + trimmed;
+        return "https://" + trimmed.replaceFirst("^/+", "");
+    }
 
     public String getEvidenceSourceLabel() { return evidenceSourceLabel; }
     public void setEvidenceSourceLabel(String evidenceSourceLabel) { this.evidenceSourceLabel = evidenceSourceLabel; }
