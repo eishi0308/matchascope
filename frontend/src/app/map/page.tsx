@@ -547,25 +547,43 @@ export default function MapPage() {
         <div className="flex items-center gap-3">
           <div className="relative flex-1 sm:max-w-sm">
             <Search size={15} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400" />
+            {/* Escape clears the field the way every native search control does, so the
+                mouse is never the only way back to the full list. */}
             <input
               type="text"
               placeholder="Search cafes, suburbs…"
               value={query}
               onChange={(e) => setQuery(e.target.value)}
-              className="w-full pl-9 pr-9 py-2.5 rounded-xl bg-gray-100 text-[16px] text-gray-700 placeholder:text-gray-400 outline-none focus:bg-white focus:ring-2 focus:ring-matcha-200 transition-all"
+              onKeyDown={(e) => {
+                if (e.key === "Escape" && query) {
+                  e.preventDefault();
+                  setQuery("");
+                }
+              }}
+              className="w-full pl-9 pr-11 py-2.5 rounded-xl bg-gray-100 text-[16px] text-gray-700 placeholder:text-gray-400 outline-none focus:bg-white focus:ring-2 focus:ring-matcha-200 transition-all"
             />
+            {/* Clear. A bare glyph pinned to the edge reads as a stray mark and gives a
+                thumb nothing to aim at, so the cross sits on its own disc: the circle
+                supplies the optical centre, and ::after quietly widens the tap area to
+                ~40px without inflating the visible button. Centred with top/bottom-0 +
+                my-auto rather than -translate-y-1/2, because Framer writes its own
+                transform while animating and would drop the class's translate. */}
             <AnimatePresence>
               {query && (
                 <motion.button
+                  type="button"
                   onClick={() => setQuery("")}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
-                  initial={{ opacity: 0, scale: 0.7 }}
-                  animate={{ opacity: 1, scale: 1 }}
-                  exit={{ opacity: 0, scale: 0.7 }}
-                  transition={SPRING}
-                  whileTap={{ scale: 0.85 }}
+                  aria-label="Clear search"
+                  title="Clear search"
+                  className="absolute right-2 top-0 bottom-0 my-auto grid place-items-center w-7 h-7 rounded-full bg-gray-900/[0.06] text-gray-500 hover:bg-gray-900/[0.11] hover:text-gray-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-matcha-400 transition-colors after:absolute after:-inset-1.5 after:content-['']"
+                  initial={{ opacity: 0, scale: reduceMotion ? 1 : 0.5, rotate: reduceMotion ? 0 : -75 }}
+                  animate={{ opacity: 1, scale: 1, rotate: 0 }}
+                  exit={{ opacity: 0, scale: reduceMotion ? 1 : 0.5, rotate: reduceMotion ? 0 : -75 }}
+                  transition={reduceMotion ? { duration: 0.12 } : SPRING}
+                  whileHover={reduceMotion ? undefined : { scale: 1.08 }}
+                  whileTap={reduceMotion ? undefined : { scale: 0.9 }}
                 >
-                  <X size={14} />
+                  <X size={13} strokeWidth={2.75} />
                 </motion.button>
               )}
             </AnimatePresence>
