@@ -217,9 +217,11 @@ function Hero({ stats }: { stats: Props["stats"] }) {
   // Same source as the disclosure card's denominator, so the hero funnel and the
   // breakdown below can never quote different totals for "we could read this".
   const read     = stats?.assessable ?? coverage.read;
-  // Read, minus everyone who said something — A names a source, B says only
-  // "Japanese matcha". What is left published nothing about origin at all.
-  const silent   = Math.max(0, read - verified - (stats?.byLevel?.B ?? coverage.byLevel.B));
+  // B says only "Japanese matcha" — no region, no farm, no supplier.
+  const japanOnly = stats?.byLevel?.B ?? coverage.byLevel.B;
+  // Read, minus everyone who said something. What is left published nothing about
+  // origin at all. The three shown below sum to `read` exactly, by construction.
+  const silent   = Math.max(0, read - verified - japanOnly);
 
   return (
     <section
@@ -281,25 +283,26 @@ function Hero({ stats }: { stats: Props["stats"] }) {
           <SplitHeadline text="where the matcha comes from." delay={0.3} />
         </h1>
 
-        {/* The method, stated once on the whole page. "So" hinges off the headline and
-            "what they do say" answers its "won't tell you", which is what earns the search
-            below: the page has just told you most cafes are silent, so the field is the
-            way to find the ones that aren't.
-            This used to read "So we read all 1,147", which was not true — 1,147 is how many
-            cafes were found, and 588 is how many had a page that could be read. Claiming the
-            larger number under the verb "read" overstated the crawl by 559 cafes and put the
-            first screen in direct contradiction with the disclosure card further down. No
-            number here now: the funnel immediately below counts, in the right order, with
-            the right verbs, and the sentence only has to say what was done. */}
+        {/* The method, stated once on the whole page. "does say" hinges off the headline's
+            "won't tell you": the page has just named the silence, and this says what was
+            done about it.
+            No number here — the caption and funnel immediately below count, in the right
+            order, with the right verbs. An earlier draft opened "So we read all 1,147",
+            which overstated the crawl by every cafe whose page never opened.
+            The second sentence is scoped on purpose. It used to promise "quoted exactly
+            what they do say, dated and linked" flat out, which reads as a description of
+            every listing — and only 114 of 1,147 carry a quote, a source and a date. "Where
+            a cafe does say" attaches the promise to the cafes it is actually true of, and
+            costs nothing: the reader already knows from the headline that most do not. */}
         <motion.p
           className="mt-4 sm:mt-6 text-[16px] sm:text-[18px] text-gray-600 max-w-xl mx-auto leading-relaxed"
           initial={reduce ? false : { opacity: 0, y: 14 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.7, ease: EASE_EXPO, delay: 0.75 }}
         >
-          So we read every page we could open: website, menu, socials. Then quoted
-          exactly what they <span className="text-gray-900 font-medium">do</span> say,
-          dated and linked.
+          We went to every one — website, menu, socials — and read what they publish.
+          Where a cafe <span className="text-gray-900 font-medium">does</span> say where
+          its matcha comes from, you get their exact words, the link, and the date.
         </motion.p>
 
         {/* The search field is gone — this is now a single, unambiguous CTA rather than a
@@ -356,26 +359,36 @@ function Hero({ stats }: { stats: Props["stats"] }) {
         </motion.p>
 
         <motion.div
-          // Two columns only — these are the two findings, so nothing about the layout should
-          // suggest a longer row was trimmed to fit.
-          className="mt-4 sm:mt-6 mx-auto grid grid-cols-2 max-w-xs sm:max-w-sm divide-x divide-gray-200"
+          // Three columns, and they sum to the caption's 447 exactly. This ran as two —
+          // silent and named — on the argument that only those two are findings and the
+          // middle class would dilute them. But the two sat directly under "447 had a page
+          // we could read" and came to 428, so the reader's own arithmetic failed against a
+          // figure the page had just given them, and the missing 19 read as an error rather
+          // than as the category it is. A whole that decomposes is worth more than two
+          // figures that are individually louder: the sum closing is itself the argument
+          // that nothing here has been shaped.
+          className="mt-4 sm:mt-6 mx-auto grid grid-cols-3 max-w-sm sm:max-w-lg divide-x divide-gray-200"
           initial={reduce ? false : { opacity: 0 }}
           animate={{ opacity: 1 }}
           transition={{ duration: 0.8, delay: 1.25 }}
         >
           {[
             { n: silent,   label: "say nothing" },
+            // The middle class, in its own words rather than in ours: these cafes say
+            // "Japanese matcha" and stop, which is a real disclosure and still not an answer
+            // to where. Quoting it keeps the row from reading as a softer kind of silence.
+            { n: japanOnly, label: "say “Japanese”" },
             // "say where" rather than "name a source": it is the same fact, it fits the
             // narrow mobile column on one line where the longer phrase wrapped, and it
             // closes the headline's sentence — most cafes won't tell you where, and this
             // is exactly how many do.
             { n: verified, label: "say where" },
           ].map((s, i) => (
-            // Staggered left to right at 90ms so the two land in funnel order rather than
+            // Staggered left to right at 90ms so the three land in funnel order rather than
             // together — the drop from one figure to the next is the point.
             <motion.div
               key={s.label}
-              className="px-3 sm:px-9 text-center"
+              className="px-2 sm:px-4 text-center"
               initial={reduce ? false : { opacity: 0, y: 10 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.5, ease: EASE_OUT, delay: 1.25 + i * 0.09 }}
@@ -383,7 +396,7 @@ function Hero({ stats }: { stats: Props["stats"] }) {
               <div className="font-display text-4xl sm:text-6xl font-bold text-gray-900 leading-none">
                 <Counter value={s.n} immediate />
               </div>
-              <div className="text-[16px] sm:text-[18px] text-gray-500 mt-2">{s.label}</div>
+              <div className="text-[16px] sm:text-[18px] text-gray-500 mt-2 sm:whitespace-nowrap">{s.label}</div>
             </motion.div>
           ))}
         </motion.div>

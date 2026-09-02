@@ -823,15 +823,19 @@ function DisclosureBlock({ data }: { data: typeof DEFAULT_DISCLOSURE }) {
       <p style={TYPE.statement}>
         <span style={{ color: ACCENT }}>1 in {odds}</span> tells you.
       </p>
-      {/* The denominator, and nothing else. A "Why 588 and not 1,147?" disclosure used to
-          sit under this line, defending the gap between the two figures. It is gone because
-          the gap is gone: the page no longer claims to have read 1,147, so there is nothing
-          left to excuse. The 559 we could not reach was never a finding about cafes anyway —
-          it is a limit of the crawl, and a survey that footnotes its own tooling at the
-          reader is asking to be graded on effort. It stays where it belongs: an unfilled,
-          labelled segment on the bar below, visible without being argued. */}
+      {/* The rate above is over the cafes we could read; the bar below is over every cafe
+          found. Two bases on one card, so the narrower one has to be declared here or the
+          card quietly equivocates.
+          This read "Of the 447 cafés we could read, across Sydney and Melbourne" — a
+          sentence fragment that restated the hero caption verbatim two screens later, spelt
+          the same word two ways on one page, and declared the base without saying anything
+          about it. The choice of base is the interesting part and it was buried in a source
+          comment: counting the unreachable as silent would credit the method's own blind
+          spot to the cafes. That reasoning is the case for trusting every other number
+          here, so it belongs on the page. */}
       <p className="mt-3" style={TYPE.caption}>
-        Of the {num(checked)} cafés we could read, across Sydney and Melbourne.
+        Over the {num(checked)} we could read — not all {num(everyCafe)}. A cafe nobody
+        could reach has not declined to answer.
       </p>
 
       <div
@@ -1192,22 +1196,20 @@ export default function HomePage() {
               </span>
             </motion.h2>
 
-            {/* Subline. Left-aligned, not centred: past two or three lines a centred
-                block loses the fixed left edge the eye returns to on every line. And
-                0.45 alpha measured 4.36:1 on this ground, under the 4.5:1 floor —
-                0.72 clears it at 8.9:1. */}
-            <motion.p
-              className="mx-auto mt-10 text-left"
-              style={{ fontSize: "clamp(1.05rem, 2.5vw, 1.35rem)", color: "rgba(255,255,255,0.72)", maxWidth: "34rem", lineHeight: 1.55 }}
-              initial={{ opacity: 0, y: 24 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true }}
-              transition={{ duration: 0.72, delay: 0.18, ease: EASE }}
-            >
-              No law requires a country, a farm, or a grade on the label, so most cafes leave it
-              blank and you fill the gap yourself. Sometimes that assumption is right. Often nobody
-              knows, the cafe included.
-            </motion.p>
+            {/* No subline. The headline states the problem and the menu card below
+                demonstrates it — a paragraph between a statement and its own
+                demonstration is padding, and it cost the card the impact of following
+                the line it proves: "that's the whole label", then the label.
+                Both drafts that lived here failed the same way. The first opened on "No
+                law requires a country, a farm, or a grade on the label", which is step 01
+                of the chain 200px below, said first and said worse. The second opened on
+                "You fill that gap yourself, with a country nobody wrote down", which is
+                the headline directly above it in different words.
+                Both then closed on the cafe's own ignorance — "often nobody knows, the
+                cafe included". It is the most interesting idea either draft had and this
+                site cannot print it: nobody has asked a cafe anything. The method is
+                reading what they publish, and a page that grades others on publicly
+                verifiable evidence cannot itself assert what people know. */}
           </div>
 
           {/* Menu evidence card — the omission, made visible */}
@@ -1463,17 +1465,23 @@ export default function HomePage() {
             </Reveal>
             <Reveal delay={0.05}>
               <h2
-                className="font-display font-bold text-section mb-8"
+                /* mb-0, not mb-8: that margin existed to hold the heading off a
+                   subline that no longer exists, and left behind as a gap it reads
+                   as a line that failed to load. */
+                className="font-display font-bold text-section"
                 style={{ color: "#1c2b1a" }}
               >
                 How we verify<br /> every cafe
               </h2>
             </Reveal>
-            <Reveal delay={0.1}>
-              <p className="text-gray-500 max-w-2xl mx-auto leading-relaxed" style={{ fontSize: "clamp(1.05rem, 2.5vw, 1.3rem)" }}>
-                A strict, repeatable process with zero guesswork.
-              </p>
-            </Reveal>
+            {/* No subline here. It read "A strict, repeatable process with zero guesswork" —
+                three adjectives claiming rigour directly above four numbered steps that
+                demonstrate it, on a page that elsewhere heads a section "Proof, not
+                adjectives". It was also the fourth place on this page to promise no
+                guessing: step 02 says "No guessing allowed", step 03 "Never opinion, never
+                taste tests", and the classification pill "Never taste, never guesswork". A
+                heading standing on its own proof is stronger than one propped up by a
+                claim, and nothing belongs in this slot that the steps do not already say. */}
           </div>
 
           {/* Steps — alternating layout */}
