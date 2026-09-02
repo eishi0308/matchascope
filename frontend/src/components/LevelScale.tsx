@@ -49,7 +49,11 @@ export default function LevelScale({
   return (
     <div className={className}>
       <div
-        className="flex items-center"
+        // flex-wrap, not a narrower scale: at 320px the four boxes plus the grade's name
+        // measured 302px inside a 280px column and pushed the whole page into a horizontal
+        // scroll. Wrapping drops the name onto its own line on the narrowest phones and
+        // changes nothing anywhere else, where the row has always fitted on one.
+        className="flex items-center flex-wrap"
         style={{ gap: dim.gap, minHeight: activeBox }}
         role="img"
         aria-label={`Transparency level ${level} of A to D, where A discloses most: ${cfg.shortLabel}. ${cfg.description}`}

@@ -124,7 +124,7 @@ export default function Navbar({ onDark = false }: { onDark?: boolean } = {}) {
             the links. It was 36 and 24, close enough that the lockup and the nav
             read as one run-on group instead of two things. Stripe sits at roughly
             40/24, Vercel at 32/20; the ratio is what matters, not the absolute. */}
-        <div className="max-w-7xl mx-auto flex items-center gap-9 lg:gap-14 h-16">
+        <div className="max-w-7xl mx-auto flex items-center gap-5 sm:gap-9 lg:gap-14 h-16">
 
           {/* Logo */}
           <Link href="/" className="flex items-center gap-2.5 group" onClick={() => setMobileMenuOpen(false)}>

@@ -203,7 +203,7 @@ function Reveal({
 
 /* ───────────────────────────────────────────────────────────────── act one ── */
 
-function Hero({ stats }: { stats: Props["stats"] }) {
+function Hero() {
   const reduce  = useReducedMotion();
   const ref     = useRef<HTMLElement>(null);
 
@@ -212,17 +212,6 @@ function Hero({ stats }: { stats: Props["stats"] }) {
   const fade      = useTransform(scrollYProgress, [0, 0.75], [1, reduce ? 1 : 0]);
   const glowY     = useTransform(scrollYProgress, [0, 1], ["0%", reduce ? "0%" : "-22%"]);
 
-  const total    = stats?.total ?? coverage.total;
-  const verified = stats?.byLevel?.A ?? coverage.byLevel.A;
-  // Same source as the disclosure card's denominator, so the hero funnel and the
-  // breakdown below can never quote different totals for "we could read this".
-  const read     = stats?.assessable ?? coverage.read;
-  // B says only "Japanese matcha" — no region, no farm, no supplier.
-  const japanOnly = stats?.byLevel?.B ?? coverage.byLevel.B;
-  // Read, minus everyone who said something. What is left published nothing about
-  // origin at all. The three shown below sum to `read` exactly, by construction.
-  const silent   = Math.max(0, read - verified - japanOnly);
-
   return (
     <section
       ref={ref}
@@ -230,7 +219,7 @@ function Hero({ stats }: { stats: Props["stats"] }) {
       // desktop spacing spent 136px of a 568px phone on padding alone, which pushed the
       // figures — the part that earns the search — under the fold on short devices.
       // pt-[4.5rem] still clears the 64px fixed navbar with room to spare.
-      className="relative min-h-[100dvh] flex flex-col items-center justify-center px-5 pt-[4.5rem] pb-8 sm:pt-20 sm:pb-14 overflow-hidden"
+      className="relative min-h-[100dvh] flex flex-col items-center justify-center px-5 pt-[4.5rem] pb-8 sm:pt-20 sm:pb-14 [@media(max-height:480px)_and_(orientation:landscape)]:pt-[4.5rem] [@media(max-height:480px)_and_(orientation:landscape)]:pb-6 overflow-hidden"
     >
       {/* Parallax ground — three layers, slowest at the back */}
       <motion.div aria-hidden className="absolute inset-0 -z-10" style={{ y: glowY }}>
@@ -247,7 +236,7 @@ function Hero({ stats }: { stats: Props["stats"] }) {
       <motion.div style={{ y: headlineY, opacity: fade }} className="w-full max-w-4xl mx-auto text-center">
         {/* Eyebrow */}
         <motion.div
-          className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full mb-4 sm:mb-6"
+          className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full mb-4 sm:mb-6 [@media(max-height:480px)_and_(orientation:landscape)]:mb-2"
           style={{ background: "#f2f8f0", border: "1px solid #c2e1b5" }}
           initial={reduce ? false : { opacity: 0, y: -10 }}
           animate={{ opacity: 1, y: 0 }}
@@ -274,43 +263,23 @@ function Hero({ stats }: { stats: Props["stats"] }) {
         {/* Size steps down only below 360px. From 360 up this is the same 2.5rem it has
             always been, and from sm up the same clamp — the narrowest phones were the only
             ones where a 40px display face wrapped this sentence to six lines. */}
-        <h1 className="font-display font-bold leading-[0.92] tracking-tight text-gray-900 text-[2.15rem] min-[360px]:text-[2.5rem] sm:text-[length:clamp(2.5rem,7vw,5.5rem)]"
+        <h1 className="font-display font-bold leading-[0.92] tracking-tight text-gray-900 text-[length:clamp(2.4rem,14.5vw,3.5rem)] sm:text-[length:clamp(3.5rem,7vw,5.5rem)] [@media(max-height:480px)_and_(orientation:landscape)]:text-[2.25rem]"
             style={{ perspective: 800 }}>
           <SplitHeadline text="Most cafes" />
           <br />
           <SplitHeadline text="won’t tell you" delay={0.18} className="italic text-matcha-700" />
           <br />
-          <SplitHeadline text="where the matcha comes from." delay={0.3} />
+          <SplitHeadline text="where the matcha" delay={0.3} />
+          <br />
+          <SplitHeadline text="comes from." delay={0.42} />
         </h1>
-
-        {/* The method, stated once on the whole page. "does say" hinges off the headline's
-            "won't tell you": the page has just named the silence, and this says what was
-            done about it.
-            No number here — the caption and funnel immediately below count, in the right
-            order, with the right verbs. An earlier draft opened "So we read all 1,147",
-            which overstated the crawl by every cafe whose page never opened.
-            The second sentence is scoped on purpose. It used to promise "quoted exactly
-            what they do say, dated and linked" flat out, which reads as a description of
-            every listing — and only 114 of 1,147 carry a quote, a source and a date. "Where
-            a cafe does say" attaches the promise to the cafes it is actually true of, and
-            costs nothing: the reader already knows from the headline that most do not. */}
-        <motion.p
-          className="mt-4 sm:mt-6 text-[16px] sm:text-[18px] text-gray-600 max-w-xl mx-auto leading-relaxed"
-          initial={reduce ? false : { opacity: 0, y: 14 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.7, ease: EASE_EXPO, delay: 0.75 }}
-        >
-          We went to every one — website, menu, socials — and read what they publish.
-          Where a cafe <span className="text-gray-900 font-medium">does</span> say where
-          its matcha comes from, you get their exact words, the link, and the date.
-        </motion.p>
 
         {/* The search field is gone — this is now a single, unambiguous CTA rather than a
             form with a button attached to it. Nothing else on the first screen offers a
             second way to leave the page, so the button can afford to be the visually
             heaviest object here instead of splitting weight with an input beside it. */}
         <motion.div
-          className="mt-8 sm:mt-11 flex justify-center"
+          className="mt-8 sm:mt-11 [@media(max-height:480px)_and_(orientation:landscape)]:mt-5 flex justify-center"
           initial={reduce ? false : { opacity: 0, y: 18 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.7, ease: EASE_EXPO, delay: 0.88 }}
@@ -318,7 +287,7 @@ function Hero({ stats }: { stats: Props["stats"] }) {
           <Magnetic strength={0.22}>
             <Link
               href="/map"
-              className="group/cta inline-flex items-center justify-center gap-2.5 px-9 sm:px-12 py-5 sm:py-6 rounded-full text-[19px] sm:text-[21px] font-semibold text-white whitespace-nowrap focus-visible:ring-4 focus-visible:ring-matcha-300 outline-none"
+              className="group/cta inline-flex items-center justify-center gap-2.5 px-9 sm:px-12 py-5 sm:py-6 [@media(max-height:480px)_and_(orientation:landscape)]:py-3 rounded-full text-[19px] sm:text-[21px] [@media(max-height:480px)_and_(orientation:landscape)]:text-[17px] font-semibold text-white whitespace-nowrap focus-visible:ring-4 focus-visible:ring-matcha-300 outline-none"
               style={{
                 background: "linear-gradient(135deg,#2e6027,#4d9740)",
                 boxShadow: "0 14px 36px rgba(46,96,39,0.38), 0 3px 10px rgba(46,96,39,0.22)",
@@ -336,70 +305,6 @@ function Hero({ stats }: { stats: Props["stats"] }) {
           </Magnetic>
         </motion.div>
 
-        {/* Live proof. This briefly ran as four figures of equal weight — found, read, said
-            nothing, named a source — but only two of those are findings. "1,147" and "588"
-            answer how thorough the search was; a reader does not come to the first screen
-            asking that question, and printing them at the same size as the two numbers that
-            do answer it argued all four carried equal news. They didn't, so scope moved to a
-            caption and only the findings still get the giant digits.
-            The move also closes a gap the four-up row had: 488 + 86 = 574, not 588 — 14
-            cafes name only "Japanese matcha," no location, and belonged to neither figure.
-            Set beside each other, 588/488/86 invited that subtraction. As caption-plus-two,
-            nothing here claims the two hero numbers sum to the caption's, so the omitted 14
-            stops reading as an error. */}
-        <motion.p
-          className="mt-7 sm:mt-9 text-[15px] sm:text-[16px] text-gray-500"
-          initial={reduce ? false : { opacity: 0, y: 8 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.6, ease: EASE_OUT, delay: 1.1 }}
-        >
-          Of <span className="text-gray-700 font-medium">{total.toLocaleString()}</span> cafes
-          found, <span className="text-gray-700 font-medium">{read.toLocaleString()}</span> had
-          a page we could read.
-        </motion.p>
-
-        <motion.div
-          // Three columns, and they sum to the caption's 447 exactly. This ran as two —
-          // silent and named — on the argument that only those two are findings and the
-          // middle class would dilute them. But the two sat directly under "447 had a page
-          // we could read" and came to 428, so the reader's own arithmetic failed against a
-          // figure the page had just given them, and the missing 19 read as an error rather
-          // than as the category it is. A whole that decomposes is worth more than two
-          // figures that are individually louder: the sum closing is itself the argument
-          // that nothing here has been shaped.
-          className="mt-4 sm:mt-6 mx-auto grid grid-cols-3 max-w-sm sm:max-w-lg divide-x divide-gray-200"
-          initial={reduce ? false : { opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ duration: 0.8, delay: 1.25 }}
-        >
-          {[
-            { n: silent,   label: "say nothing" },
-            // The middle class, in its own words rather than in ours: these cafes say
-            // "Japanese matcha" and stop, which is a real disclosure and still not an answer
-            // to where. Quoting it keeps the row from reading as a softer kind of silence.
-            { n: japanOnly, label: "say “Japanese”" },
-            // "say where" rather than "name a source": it is the same fact, it fits the
-            // narrow mobile column on one line where the longer phrase wrapped, and it
-            // closes the headline's sentence — most cafes won't tell you where, and this
-            // is exactly how many do.
-            { n: verified, label: "say where" },
-          ].map((s, i) => (
-            // Staggered left to right at 90ms so the three land in funnel order rather than
-            // together — the drop from one figure to the next is the point.
-            <motion.div
-              key={s.label}
-              className="px-2 sm:px-4 text-center"
-              initial={reduce ? false : { opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.5, ease: EASE_OUT, delay: 1.25 + i * 0.09 }}
-            >
-              <div className="font-display text-4xl sm:text-6xl font-bold text-gray-900 leading-none">
-                <Counter value={s.n} immediate />
-              </div>
-              <div className="text-[16px] sm:text-[18px] text-gray-500 mt-2 sm:whitespace-nowrap">{s.label}</div>
-            </motion.div>
-          ))}
-        </motion.div>
       </motion.div>
 
       {/* Scroll cue. Dropped on short viewports: the 720px cutoff below was measured before
@@ -422,6 +327,112 @@ function Hero({ stats }: { stats: Props["stats"] }) {
       >
         <ArrowDown size={18} />
       </motion.div>
+    </section>
+  );
+}
+
+/**
+ * The count, on its own screen.
+ *
+ * <p>These three figures and their caption used to sit inside the hero, under the
+ * headline, the method sentence and the button. Seven elements on one screen forced the
+ * display face down from 88px to 64px and still pushed the numbers under the fold on any
+ * laptop with browser chrome — so the page shrank the one thing it does best in order to
+ * hide the one thing it most needs to prove.
+ *
+ * <p>Split, both halves get to be themselves: the hero states the claim at full size and
+ * offers one way out, and the count gets a frame where the digits can run at 96px instead
+ * of 36px. The order here is scope, then finding, then method — the reader sees what was
+ * covered, what came of it, and only then how it was done, which is the order the
+ * questions actually arrive in.
+ */
+function Findings({ stats }: { stats: Props["stats"] }) {
+  const reduce = useReducedMotion();
+
+  const total    = stats?.total ?? coverage.total;
+  const verified = stats?.byLevel?.A ?? coverage.byLevel.A;
+  // Same source as the disclosure card's denominator, so this screen and the breakdown
+  // below can never quote different totals for "we could read this".
+  const read     = stats?.assessable ?? coverage.read;
+  // B says only "Japanese matcha" — no region, no farm, no supplier.
+  const japanOnly = stats?.byLevel?.B ?? coverage.byLevel.B;
+  // Read, minus everyone who said something. What is left published nothing about
+  // origin at all. The three below sum to `read` exactly, by construction — which is
+  // why the middle class is shown at all rather than folded away as the quiet one.
+  const silent   = Math.max(0, read - verified - japanOnly);
+
+  return (
+    <section
+      className="relative sm:min-h-[100dvh] flex flex-col items-center justify-center px-5 py-16 sm:py-20 [@media(max-height:480px)_and_(orientation:landscape)]:py-8"
+      aria-label="What the search found"
+    >
+      <motion.p
+        className="text-[15px] sm:text-[17px] text-gray-500 text-center"
+        initial={reduce ? false : { opacity: 0, y: 10 }}
+        whileInView={{ opacity: 1, y: 0 }}
+        viewport={{ once: true, margin: "-15%" }}
+        transition={{ duration: 0.6, ease: EASE_OUT }}
+      >
+        Of <span className="text-gray-700 font-medium">{total.toLocaleString()}</span> cafes
+        found, <span className="text-gray-700 font-medium">{read.toLocaleString()}</span> had
+        a page we could read.
+      </motion.p>
+
+      <motion.div
+        className="mt-8 sm:mt-12 [@media(max-height:480px)_and_(orientation:landscape)]:mt-4 mx-auto grid grid-cols-1 sm:grid-cols-3 w-full max-w-xs sm:max-w-3xl divide-y sm:divide-y-0 sm:divide-x divide-gray-200"
+        initial={reduce ? false : { opacity: 0 }}
+        whileInView={{ opacity: 1 }}
+        viewport={{ once: true, margin: "-15%" }}
+        transition={{ duration: 0.8 }}
+      >
+        {[
+          { n: silent,    label: "say nothing" },
+          // The middle class, in its own words rather than in ours: these cafes say
+          // "Japanese matcha" and stop, which is a real disclosure and still not an answer
+          // to where. Quoting it keeps the row from reading as a softer kind of silence.
+          { n: japanOnly, label: "say \u201CJapanese\u201D" },
+          // "say where" rather than "name a source": same fact, fits the narrow mobile
+          // column on one line, and it closes the headline's sentence — most cafes won't
+          // tell you where, and this is exactly how many do.
+          { n: verified,  label: "say where" },
+        ].map((s, i) => (
+          // Staggered left to right so the three land in funnel order rather than
+          // together — the drop from one figure to the next is the point.
+          <motion.div
+            key={s.label}
+            className="py-4 sm:py-0 px-2 sm:px-6 text-center"
+            initial={reduce ? false : { opacity: 0, y: 14 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true, margin: "-15%" }}
+            transition={{ duration: 0.55, ease: EASE_OUT, delay: i * 0.1 }}
+          >
+            <div className="font-display text-[3.25rem] min-[390px]:text-[3.75rem] sm:text-8xl [@media(max-height:480px)_and_(orientation:landscape)]:text-5xl font-bold text-gray-900 leading-none">
+              <Counter value={s.n} />
+            </div>
+            <div className="text-[17px] sm:text-[19px] [@media(max-height:480px)_and_(orientation:landscape)]:text-[13px] text-gray-500 mt-1.5 sm:mt-4 [@media(max-height:480px)_and_(orientation:landscape)]:mt-1.5 sm:whitespace-nowrap">
+              {s.label}
+            </div>
+          </motion.div>
+        ))}
+      </motion.div>
+
+      {/* The method, stated once on the whole page, and placed where it answers a question
+          the reader now has. Above the numbers it was a preamble; under them it is the
+          receipt. "does say" still hinges off the headline's "won't tell you".
+          The second sentence is scoped on purpose. It used to promise "quoted exactly what
+          they do say, dated and linked" flat out, which reads as a description of every
+          listing — and only 114 of 1,147 carry a quote, a source and a date. */}
+      <motion.p
+        className="mt-12 sm:mt-16 [@media(max-height:480px)_and_(orientation:landscape)]:mt-6 max-w-xl text-center text-[16px] sm:text-[18px] [@media(max-height:480px)_and_(orientation:landscape)]:text-[14px] text-gray-600 leading-relaxed"
+        initial={reduce ? false : { opacity: 0, y: 14 }}
+        whileInView={{ opacity: 1, y: 0 }}
+        viewport={{ once: true, margin: "-15%" }}
+        transition={{ duration: 0.7, ease: EASE_EXPO, delay: 0.15 }}
+      >
+        We went to every one — website, menu, socials — and read what they publish.
+        Where a cafe <span className="text-gray-900 font-medium">does</span> say where
+        its matcha comes from, you get their exact words, the link, and the date.
+      </motion.p>
     </section>
   );
 }
@@ -807,7 +818,8 @@ export default function LandingOverture({ stats, verified }: Props) {
         className="fixed top-16 left-0 right-0 h-[2px] origin-left z-[90]"
         style={{ scaleX: progress, background: "linear-gradient(90deg,#2e6027,#6eb35c)" }}
       />
-      <Hero stats={stats} />
+      <Hero />
+      <Findings stats={stats} />
       <VerifiedMarquee verified={verified} />
       <DisclosureStat stats={stats} />
     </>
