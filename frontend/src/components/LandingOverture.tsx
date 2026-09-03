@@ -391,10 +391,13 @@ function Findings({ stats }: { stats: Props["stats"] }) {
           // "Japanese matcha" and stop, which is a real disclosure and still not an answer
           // to where. Quoting it keeps the row from reading as a softer kind of silence.
           { n: japanOnly, label: "say \u201CJapanese\u201D" },
-          // "say where" rather than "name a source": same fact, fits the narrow mobile
-          // column on one line, and it closes the headline's sentence — most cafes won't
-          // tell you where, and this is exactly how many do.
-          { n: verified,  label: "say where" },
+          // "name the region" rather than "say where". The row above already says
+          // "Japanese", and Japan is a where — so "say where" drew no line between the two
+          // classes it exists to separate. Region is the actual threshold between them:
+          // 89 of these 100 name one (Uji, Shizuoka, Fukuoka, Yame), and the rest name the
+          // tea house itself, which is narrower still. The verb carries the escalation too:
+          // the first two rows say something, this one names it.
+          { n: verified,  label: "name the region" },
         ].map((s, i) => (
           // Staggered left to right so the three land in funnel order rather than
           // together — the drop from one figure to the next is the point.
@@ -458,7 +461,7 @@ function VerifiedMarquee({ verified }: { verified: Cafe[] }) {
       <div className="flex items-center justify-center gap-2.5 mb-8 px-5">
         <ShieldCheck size={16} className="text-matcha-600 flex-shrink-0" />
         <span className="text-[16px] uppercase tracking-[0.18em] text-gray-500 font-semibold text-center">
-          {names.length} cafes say where their matcha is from
+          {names.length} cafes name the region their matcha comes from
         </span>
       </div>
 
