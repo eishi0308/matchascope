@@ -8,6 +8,7 @@ import { motion, AnimatePresence, useReducedMotion } from "framer-motion";
 import Navbar from "@/components/Navbar";
 import CafeDetailPanel from "@/components/CafeDetailPanel";
 import LevelFilter from "@/components/LevelFilter";
+import SelectMenu from "@/components/SelectMenu";
 import FavoriteButton from "@/components/FavoriteButton";
 import { useFavoriteIds } from "@/lib/favorites";
 import { Cafe, levelConfig, TransparencyLevel, City, CafeType } from "@/data/cafes";
@@ -610,24 +611,20 @@ export default function MapPage() {
             total={baseFiltered.length}
           />
 
-          {[
-            { val: cityFilter,  opts: CITY_OPTS,  set: setCityFilter  as (v: string) => void },
-            { val: typeFilter,  opts: TYPE_OPTS,  set: setTypeFilter  as (v: string) => void },
-          ].map((f, i) => (
-            <motion.div key={i} className="relative flex-shrink-0" whileHover={{ scale: 1.02 }} transition={SPRING}>
-              <select
-                value={f.val}
-                onChange={(e) => f.set(e.target.value)}
-                className="appearance-none pl-3.5 pr-8 py-2 sm:py-2.5 rounded-xl bg-gray-100 text-[16px] text-gray-700 outline-none focus:ring-2 focus:ring-matcha-200 cursor-pointer transition-all"
-                style={f.val !== "All" ? { background: "#e6f4e0", color: "#2e6027" } : {}}
-              >
-                {f.opts.map((o) => (
-                  <option key={o.value} value={o.value}>{o.label}</option>
-                ))}
-              </select>
-              <ChevronDown size={13} className="absolute right-2.5 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" />
-            </motion.div>
-          ))}
+          <SelectMenu
+            label="City"
+            value={cityFilter}
+            options={CITY_OPTS}
+            neutralValue={"All" as CityFilter}
+            onChange={setCityFilter}
+          />
+          <SelectMenu
+            label="Type"
+            value={typeFilter}
+            options={TYPE_OPTS}
+            neutralValue={"All" as CafeType | "All"}
+            onChange={setTypeFilter}
+          />
 
           <motion.button
             onClick={() => setSavedOnly((v) => !v)}
