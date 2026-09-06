@@ -326,118 +326,125 @@ function FactList({ items }: { items: typeof PROBLEM_FACTS }) {
   );
 }
 
-// ── Menu evidence card — a plausible cafe menu, scanned and stamped ────────
+// ── Real menu lines — the omission, observed rather than illustrated ───────
 
-const MENU_ITEMS = [
-  { name: "Flat White", price: "$4.80" },
-  { name: "Long Black", price: "$4.50" },
-  { name: "Matcha Latte", price: "$7.50", flagged: true },
-  { name: "Chai Latte", price: "$5.50" },
+/* This was a fabricated menu card with a red "ORIGIN NOT LISTED" rubber stamp
+   rotated -11deg, springing in at a 1.55s delay, under a caption that admitted
+   the whole thing was invented. On a site whose promise is "their exact words,
+   the link, and the date", the one section built to show the problem was the
+   one section that was made up — and the stamp was this page delivering a
+   verdict on a cafe that does not exist.
+   These fifteen lines are quoted from the cafes' own pages, from the same crawl
+   every number here comes from. Each page was checked for any mention of Japan,
+   a region, a farm, a supplier, a grade or a tea house: none of them carry one,
+   which is why the closing sentence can be stated flatly rather than staged.
+   The claim of the section is typicality, and one example cannot demonstrate
+   typical — fifteen can, and the reader counts them. */
+const MENU_LINES: { item: string; price: string; source: string }[] = [
+  { item: "Matcha Latte",              price: "4.00",  source: "heyyou.com.au" },
+  { item: "Matcha Latte",              price: "5.00",  source: "blackflatcoffee.com.au" },
+  { item: "Matcha",                    price: "5.50",  source: "wedgestkilda.com.au" },
+  { item: "Matcha Latte",              price: "5.50",  source: "cafeharmony.yumbojumbo.com.au" },
+  { item: "Matcha milk tea",           price: "5.50",  source: "blackandwhitemilktea.lifeintouch.net" },
+  { item: "Matcha Latte",              price: "5.50",  source: "hearthsidecafe.com" },
+  { item: "Matcha Latte",              price: "5.90",  source: "quatre.cafe" },
+  { item: "Matcha",                    price: "6.00",  source: "terracottaroasters.com" },
+  { item: "Matcha Latte",              price: "6.50",  source: "midsquarecoffee.com.au" },
+  { item: "Matcha Latte",              price: "7.50",  source: "algorithmaustralia.com" },
+  { item: "Iced Matcha Latte",         price: "8.00",  source: "cafekahvila.com.au" },
+  { item: "Iced Matcha Latte Series",  price: "8.00",  source: "sakuracafe.lifeintouch.net" },
+  { item: "Iced Passion Fruit Matcha", price: "9.00",  source: "ariana-place.square.site" },
+  { item: "Iced Matcha Latte",         price: "9.00",  source: "rebornspecialtycoffee.com" },
+  { item: "Banana Bread Matcha",       price: "11.00", source: "sanimelbourne.com.au" },
 ];
 
 function MenuEvidenceCard() {
-  const ref = useRef<HTMLDivElement>(null);
+  const ref    = useRef<HTMLDivElement>(null);
   const inView = useInView(ref, { once: true, margin: "-100px" });
 
   return (
-    <div ref={ref} className="relative w-full max-w-[560px] mx-auto" style={{ perspective: 1000 }}>
-      {/* Coffee ring stain — a little grounded realism */}
-      <div
-        className="absolute pointer-events-none rounded-full"
-        style={{ top: -32, right: -38, width: 122, height: 122, border: "10px solid rgba(120,84,40,0.10)" }}
-      />
-
-      <motion.div
-        className="relative rounded-2xl overflow-visible"
-        style={{ background: "#fdfcf9", boxShadow: "0 40px 90px rgba(0,0,0,0.45), 0 4px 18px rgba(0,0,0,0.2)" }}
-        initial={{ opacity: 0, y: 46, rotate: -3 }}
-        animate={inView ? { opacity: 1, y: 0, rotate: -1.4 } : {}}
-        transition={{ duration: 0.85, ease: EASE_EXPO }}
+    <div ref={ref} className="w-full max-w-[680px] mx-auto">
+      <p
+        className="text-center text-[16px] mb-10"
+        style={{ color: "rgba(255,255,255,0.55)" }}
       >
-        <div className="px-10 pt-9 pb-10 rounded-2xl overflow-hidden relative" style={{ border: "1px solid rgba(0,0,0,0.07)" }}>
-          <div className="flex items-center justify-between mb-7">
-            <span className="text-[16px] uppercase tracking-[0.22em] font-semibold" style={{ color: "#b3ada0" }}>
-              Menu · Beverages
+        Fifteen matcha drinks, as their own menus list them.
+      </p>
+
+      {/* Rows, hairlines, tabular numerals — the same kit as the counts upstream.
+          Price is the only thing every one of these menus agrees to tell you. */}
+      <div role="table" aria-label="Matcha menu items quoted from cafe websites">
+        {MENU_LINES.map((line, i) => (
+          <motion.div
+            key={line.source + line.item}
+            role="row"
+            className="flex items-baseline gap-4 py-3"
+            style={{ borderTop: i === 0 ? "none" : "1px solid rgba(255,255,255,0.08)" }}
+            initial={{ opacity: 0 }}
+            animate={inView ? { opacity: 1 } : {}}
+            transition={{ duration: 0.4, delay: i * 0.04, ease: EASE }}
+          >
+            <span
+              role="cell"
+              className="font-display text-[17px] sm:text-[19px] flex-shrink-0"
+              style={{ color: "rgba(255,255,255,0.92)" }}
+            >
+              {line.item}
             </span>
-            <span className="text-[16px] font-semibold" style={{ color: "#d4cfc3" }}>
-              Sydney, AU
+
+            {/* Leader dots carry the eye to the price without drawing a rule */}
+            <span
+              aria-hidden
+              className="flex-1 min-w-0 self-center"
+              style={{
+                height: 1,
+                background:
+                  "repeating-linear-gradient(90deg,rgba(255,255,255,0.20) 0 2px,transparent 2px 6px)",
+              }}
+            />
+
+            <span
+              role="cell"
+              className="text-[16px] sm:text-[17px] tabular-nums flex-shrink-0"
+              style={{ color: "rgba(255,255,255,0.75)" }}
+            >
+              {line.price}
             </span>
-          </div>
 
-          <div className="space-y-1">
-            {MENU_ITEMS.map((item, i) => (
-              <div
-                key={item.name}
-                className="relative flex items-center justify-between rounded-lg px-4 -mx-4"
-                style={{ paddingTop: 13, paddingBottom: 13 }}
-              >
-                <span
-                  className="text-[20px] font-medium"
-                  style={{ color: item.flagged ? "#3a2f22" : "#9c9488", fontWeight: item.flagged ? 700 : 500 }}
-                >
-                  {item.name}
-                </span>
-                <span
-                  className="text-[18px] tabular-nums"
-                  style={{ color: item.flagged ? "#3a2f22" : "#b3ada0", fontWeight: item.flagged ? 700 : 500 }}
-                >
-                  {item.price}
-                </span>
+            <span
+              role="cell"
+              className="hidden sm:block text-[13px] flex-shrink-0 text-right truncate"
+              style={{ color: "rgba(255,255,255,0.38)", width: 235 }}
+              title={line.source}
+            >
+              {line.source}
+            </span>
+          </motion.div>
+        ))}
+      </div>
 
-                {item.flagged && (
-                  <motion.div
-                    className="absolute inset-0 rounded-lg pointer-events-none"
-                    style={{ background: "linear-gradient(90deg, transparent, rgba(220,38,38,0.16) 45%, rgba(220,38,38,0.16) 55%, transparent)" }}
-                    initial={{ x: "-120%" }}
-                    animate={inView ? { x: "120%" } : {}}
-                    transition={{ duration: 1.1, delay: 0.9, ease: EASE }}
-                  />
-                )}
-              </div>
-            ))}
-          </div>
-
-          <p className="text-[16px] leading-relaxed mt-7 italic" style={{ color: "#786f5f" }}>
-            Iced or hot · oat milk available
-          </p>
-        </div>
-
-        {/* Ink stamp — snaps in like a rubber stamp hitting paper.
-            It hangs off the menu's right edge on purpose, but the overhang is a share of the
-            card, and on a phone the card is the screen: -9% put the stamp's edge exactly on
-            the viewport boundary at 390px and past it by 430px, so the word it exists to say
-            was the part that got cut. The overhang shrinks to a token -2% until there is a
-            margin to hang into. */}
-        <motion.div
-          className="absolute select-none right-[-2%] sm:right-[-9%]"
-          style={{
-            top: "48%",
-            padding: "14px 20px",
-            borderRadius: 10,
-            border: "4px solid #dc2626",
-            color: "#dc2626",
-            background: "rgba(253,252,249,0.88)",
-            transform: "rotate(-11deg)",
-          }}
-          initial={{ opacity: 0, scale: 2.4, rotate: 4 }}
-          animate={inView ? { opacity: 0.92, scale: 1, rotate: -11 } : {}}
-          transition={{ duration: 0.45, delay: 1.55, ease: [0.34, 1.56, 0.64, 1] }}
-        >
-          <div className="text-center leading-none">
-            <div className="font-black tracking-[0.08em]" style={{ fontSize: "18px" }}>ORIGIN</div>
-            <div className="font-black tracking-[0.04em]" style={{ fontSize: "18px" }}>NOT LISTED</div>
-          </div>
-        </motion.div>
-      </motion.div>
+      {/* The only editorial sentence in the section. It does not need a stamp:
+          the reader reached it fifteen rows ago. */}
+      <motion.p
+        className="font-display text-[22px] sm:text-[26px] mt-12 leading-snug"
+        style={{ color: "rgba(255,255,255,0.95)" }}
+        initial={{ opacity: 0, y: 12 }}
+        animate={inView ? { opacity: 1, y: 0 } : {}}
+        transition={{ duration: 0.6, delay: 0.7, ease: EASE_EXPO }}
+      >
+        Not one of them says where the matcha came from.
+      </motion.p>
 
       <motion.p
-        className="text-center mt-10"
-        style={{ fontSize: "16px", color: "rgba(255,255,255,0.55)" }}
+        className="text-[14px] mt-4 leading-relaxed"
+        style={{ color: "rgba(255,255,255,0.42)" }}
         initial={{ opacity: 0 }}
         animate={inView ? { opacity: 1 } : {}}
-        transition={{ duration: 0.6, delay: 2.0 }}
+        transition={{ duration: 0.6, delay: 0.85 }}
       >
-        Illustrative example of a typical Australian cafe menu
+        Quoted from each cafe&rsquo;s own page, read 25 August 2026. Prices in AUD.
+        None of these fifteen pages mentions Japan, a region, a farm, a supplier
+        or a grade.
       </motion.p>
     </div>
   );
