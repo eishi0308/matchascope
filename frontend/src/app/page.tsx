@@ -112,11 +112,21 @@ const LEVEL_CARDS = [
 ];
 
 
+/* Three steps, not four. "The Menu — so most menus just say matcha, never where
+   it's from" used to sit second, and it failed twice over: it was step 01 with
+   "So" in front of it, adding no mechanism of its own, and it described the
+   fifteen real menus printed immediately above it, which the reader has just
+   finished reading. Telling someone what they have this second seen with their
+   own eyes is the weakest line a page can spend.
+   Cutting it also repairs the causal claim. The four steps were presented as a
+   chain, but menus being silent does not cause cheaper powder to exist — the
+   supply fact is an independent premise, not a consequence of the one above it.
+   What is left is a valid argument rather than a padded one: nobody must say,
+   the same word covers other leaf, therefore the word carries no origin. */
 const PROBLEM_FACTS = [
-  { icon: Shield,   num: "01", tag: "The Law",    phrase: "No law requires cafes to say where their matcha comes from" },
-  { icon: FileText, num: "02", tag: "The Menu",   phrase: 'So most menus just say "matcha", never where it\'s from' },
-  { icon: Search,   num: "03", tag: "The Supply", phrase: "Cheaper powder from outside Japan still sold as \"matcha\"" },
-  { icon: Eye,      num: "04", tag: "The Result", phrase: "You have no way to know if it's actually from Japan" },
+  { icon: Shield, num: "01", tag: "The Law",    phrase: "No law requires a cafe to say where its matcha comes from" },
+  { icon: Search, num: "02", tag: "The Supply", phrase: "Cheaper powder from outside Japan is sold under the same word" },
+  { icon: Eye,    num: "03", tag: "The Result", phrase: "So \"matcha\" on a menu tells you nothing about origin" },
 ];
 
 const HARM_CARDS = [
@@ -458,31 +468,38 @@ function ChainStep({ item, isLast }: { item: typeof PROBLEM_FACTS[number]; isLas
   const Icon = item.icon;
 
   return (
-    <div ref={ref} className="flex gap-6 sm:gap-8">
+    <div ref={ref} className="flex gap-6 sm:gap-10">
       {/* Rail — badge + drawing connector to the next step */}
       <div className="flex flex-col items-center flex-shrink-0">
+        {/* The mark was 18px of icon inside a 56px ring, which read as a bullet
+            rather than a step. It is now roughly twice the size, and the stroke
+            weight comes DOWN as the size goes up: lucide's default 2px is drawn
+            for 16-24px, and at 38px it thickens into a sticker. 1.25 holds the
+            same optical density at the larger size, which is the whole reason a
+            big icon can look drawn rather than zoomed.
+            The ring loses half its border for the same reason — a 1.5px rule
+            around a 56px circle is a hairline, around a 92px circle it is a
+            band — and the pulsing box-shadow ping is gone outright. */}
         <motion.div
-          className="w-14 h-14 rounded-full flex items-center justify-center relative flex-shrink-0"
-          initial={{ scale: 0.7, opacity: 0, borderColor: "rgba(255,255,255,0.12)", backgroundColor: "rgba(255,255,255,0.03)" }}
+          className="w-[76px] h-[76px] sm:w-[92px] sm:h-[92px] rounded-full flex items-center justify-center relative flex-shrink-0"
+          initial={{ scale: 0.82, opacity: 0, borderColor: "rgba(255,255,255,0.10)", backgroundColor: "rgba(255,255,255,0.02)" }}
           animate={inView ? {
             scale: 1, opacity: 1,
-            borderColor: "rgba(109,191,94,0.55)",
-            backgroundColor: "rgba(77,151,64,0.14)",
+            borderColor: "rgba(109,191,94,0.42)",
+            backgroundColor: "rgba(77,151,64,0.10)",
           } : {}}
-          style={{ borderWidth: 1.5, borderStyle: "solid" }}
-          transition={{ duration: 0.55, ease: EASE_EXPO }}
+          style={{ borderWidth: 1, borderStyle: "solid" }}
+          transition={{ duration: 0.6, ease: EASE_EXPO }}
         >
-          <Icon size={18} style={{ color: "#7dd56f" }} />
-          <motion.span
-            className="absolute inset-0 rounded-full pointer-events-none"
-            initial={{ boxShadow: "0 0 0 0 rgba(125,213,111,0)" }}
-            animate={inView ? { boxShadow: ["0 0 0 0 rgba(125,213,111,0.45)", "0 0 0 14px rgba(125,213,111,0)"] } : {}}
-            transition={{ duration: 1.1, delay: 0.15 }}
+          <Icon
+            className="w-[32px] h-[32px] sm:w-[38px] sm:h-[38px]"
+            strokeWidth={1.25}
+            style={{ color: "#7dd56f" }}
           />
         </motion.div>
 
         {!isLast && (
-          <div className="w-px flex-1 my-1 relative" style={{ minHeight: 52, background: "rgba(255,255,255,0.1)" }}>
+          <div className="w-px flex-1 my-2 relative" style={{ minHeight: 64, background: "rgba(255,255,255,0.09)" }}>
             <motion.div
               className="absolute inset-x-0 top-0 origin-top"
               style={{ background: "linear-gradient(180deg, #4d9740, #7dd56f)", height: "100%" }}
@@ -496,7 +513,7 @@ function ChainStep({ item, isLast }: { item: typeof PROBLEM_FACTS[number]; isLas
 
       {/* Content */}
       <motion.div
-        className={isLast ? "pb-2 pt-2" : "pb-12 sm:pb-14 pt-2"}
+        className={isLast ? "pb-2 pt-4 sm:pt-6" : "pb-14 sm:pb-16 pt-4 sm:pt-6"}
         initial={{ opacity: 0, x: -18 }}
         animate={inView ? { opacity: 1, x: 0 } : {}}
         transition={{ duration: 0.55, delay: 0.12, ease: EASE_EXPO }}
@@ -1237,6 +1254,53 @@ export default function HomePage() {
 
           {/* Facts — a causal chain, not a list */}
           <div className="max-w-5xl mx-auto py-16 sm:py-20">
+            {/* The chain ran with no heading at all: four steps arrived straight off
+                a divider, so the reader met "The Law" with no idea why a law was
+                suddenly being discussed. The heading has to answer the question the
+                menu above just raised — not "what is missing" but "why is it allowed
+                to be missing".
+                The first attempt answered instead of asking — "Nobody broke a rule."
+                — which is step 01 of the chain directly below it, said first and said
+                worse. A heading that hands over the conclusion leaves the four steps
+                with no question to close.
+                The question then has to be scoped to what the list actually answers.
+                "Why doesn't the menu have to say?" was closed by step 01 on its own —
+                no law requires it — leaving the remaining steps with nothing to do.
+                "Why can't you tell?" needs all three: the law, the supply, and the
+                conclusion they force. The reframe the old heading was carrying
+                survives in the subline, where it sets the list up instead of
+                pre-empting it — and it stays because it is the only honest
+                framing available: this site states plainly that a missing disclosure
+                is an observation and not an accusation, so a heading implying
+                concealment would contradict the standard the rest of the page holds
+                itself to. */}
+            <motion.div
+              className="mb-14 sm:mb-20"
+              initial={{ opacity: 0, y: 22 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true, margin: "-80px" }}
+              transition={{ duration: 0.7, ease: EASE_EXPO }}
+            >
+              <span
+                className="block uppercase tracking-[0.22em] font-semibold mb-5"
+                style={{ fontSize: "16px", color: "#7dd56f" }}
+              >
+                Why It Happens
+              </span>
+              <h2
+                className="font-display font-bold leading-none"
+                style={{ fontSize: "clamp(2.1rem, 6vw, 4rem)", color: "#f5f5f0", letterSpacing: "-0.02em" }}
+              >
+                Why can&rsquo;t you tell?
+              </h2>
+              <p
+                className="mt-5 max-w-xl leading-relaxed"
+                style={{ fontSize: "17px", color: "rgba(255,255,255,0.55)" }}
+              >
+                Two facts, both legal.
+              </p>
+            </motion.div>
+
             {PROBLEM_FACTS.map((item, i) => (
               <ChainStep key={item.num} item={item} isLast={i === PROBLEM_FACTS.length - 1} />
             ))}
