@@ -1356,7 +1356,14 @@ export default function HomePage() {
               className="text-center font-bold leading-[1.1] tracking-tight mb-16 sm:mb-20"
               style={{ fontSize: "clamp(1.5rem, 4vw, 2.5rem)", color: "#1c2b1a" }}
             >
-              This isn&apos;t speculation.<br className="hidden sm:block" /> Global newsrooms are already reporting it.
+              {/* Was "This isn't speculation. Global newsrooms are already reporting it."
+                  Both halves had to go. "This isn't speculation" answers an accusation the
+                  reader never made, and it is a claim of credibility sitting directly on top
+                  of three sources that demonstrate it — the same failure as the "zero
+                  guesswork" subline cut from How It Works, on a page that heads a section
+                  "Proof, not adjectives". And "Global" overclaims what is under it: three
+                  rows, two countries, a number the reader can count for themselves. */}
+              Newsrooms are already reporting it.
             </h2>
           </Reveal>
 
