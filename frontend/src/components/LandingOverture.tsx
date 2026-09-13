@@ -23,7 +23,7 @@ import {
   animate,
 } from "framer-motion";
 import { ArrowRight, ArrowDown, MapPin, Quote, ShieldCheck, ExternalLink } from "lucide-react";
-import { Cafe } from "@/data/cafes";
+import { Cafe, levelConfig } from "@/data/cafes";
 import { externalUrl } from "@/lib/links";
 // Fallback figures for the first paint, before the live stats arrive. This block
 // renders on the server, so it is what a crawler and a reader without JavaScript
@@ -334,108 +334,106 @@ function Hero() {
 /**
  * The count, on its own screen.
  *
- * <p>These three figures and their caption used to sit inside the hero, under the
- * headline, the method sentence and the button. Seven elements on one screen forced the
- * display face down from 88px to 64px and still pushed the numbers under the fold on any
- * laptop with browser chrome — so the page shrank the one thing it does best in order to
- * hide the one thing it most needs to prove.
+ * <p>One line of scope and four figures — nothing else. The method paragraph and the
+ * percentages used to sit here too, and together they turned a number anyone takes in at a
+ * glance into a block of text nobody reads. The method has its own section further down;
+ * the bars already carry the proportions the percentages spelt out.
  *
- * <p>Split, both halves get to be themselves: the hero states the claim at full size and
- * offers one way out, and the count gets a frame where the digits can run at 96px instead
- * of 36px. The order here is scope, then finding, then method — the reader sees what was
- * covered, what came of it, and only then how it was done, which is the order the
- * questions actually arrive in.
+ * <p>The line quotes every cafe found, so the figures under it have to add up to that
+ * total — which is why the unread class has a column of its own. Left out, "1,147" would
+ * sit over three numbers summing to 447 and the reader would be left to find the missing
+ * 700. It is drawn as a different kind of thing, not as a fourth finding: a muted numeral
+ * and a hatched track, the standing convention for "no reading taken".
+ *
+ * <p>Left to right the classes run A, B, C, D — the order the grade scale uses everywhere
+ * else — and each column is the same three rows: the count, its share on one shared track,
+ * and a label of two or three words.
  */
 function Findings({ stats }: { stats: Props["stats"] }) {
   const reduce = useReducedMotion();
 
-  const total    = stats?.total ?? coverage.total;
-  const verified = stats?.byLevel?.A ?? coverage.byLevel.A;
-  // Same source as the disclosure card's denominator, so this screen and the breakdown
-  // below can never quote different totals for "we could read this".
-  const read     = stats?.assessable ?? coverage.read;
-  // B says only "Japanese matcha" — no region, no farm, no supplier.
+  const total     = stats?.total ?? coverage.total;
+  const verified  = stats?.byLevel?.A ?? coverage.byLevel.A;
+  // Same source as the disclosure card's denominator, so the two can never disagree.
+  const read      = stats?.assessable ?? coverage.read;
   const japanOnly = stats?.byLevel?.B ?? coverage.byLevel.B;
-  // Read, minus everyone who said something. What is left published nothing about
-  // origin at all. The three below sum to `read` exactly, by construction — which is
-  // why the middle class is shown at all rather than folded away as the quiet one.
-  const silent   = Math.max(0, read - verified - japanOnly);
+  // Read, minus everyone who said something. With `unread`, the four sum to `total`.
+  const silent    = Math.max(0, read - verified - japanOnly);
+  const unread    = Math.max(0, total - read);
+
+  const HATCH = "repeating-linear-gradient(135deg, rgba(28,43,26,0.34) 0 1.5px, transparent 1.5px 4px)";
+
+  const figures = [
+    { key: "A", n: verified,  label: "name the source",     fill: levelConfig.A.headerBg, ink: levelConfig.A.headerBg },
+    { key: "B", n: japanOnly, label: "say “Japanese”", fill: levelConfig.B.headerBg, ink: undefined },
+    // The same de-emphasis grey the breakdown bar gives this class further down.
+    { key: "C", n: silent,    label: "say nothing",         fill: "var(--text-muted)",    ink: undefined },
+    // Muted, but gray-500 rather than gray-400: at this size the numeral still has to
+    // clear 3:1 against the page.
+    { key: "D", n: unread,    label: "have no readable page", fill: HATCH,                  ink: "#6b7280" },
+  ];
 
   return (
     <section
-      className="relative sm:min-h-[100dvh] flex flex-col items-center justify-center px-5 py-16 sm:py-20 [@media(max-height:480px)_and_(orientation:landscape)]:py-8"
+      className="relative sm:min-h-[100dvh] flex flex-col justify-center px-5 py-16 sm:py-20 [@media(max-height:480px)_and_(orientation:landscape)]:py-8"
       aria-label="What the search found"
     >
-      <motion.p
-        className="text-[15px] sm:text-[17px] text-gray-500 text-center"
-        initial={reduce ? false : { opacity: 0, y: 10 }}
-        whileInView={{ opacity: 1, y: 0 }}
-        viewport={{ once: true, margin: "-15%" }}
-        transition={{ duration: 0.6, ease: EASE_OUT }}
-      >
-        Of <span className="text-gray-700 font-medium">{total.toLocaleString()}</span> cafes
-        found, <span className="text-gray-700 font-medium">{read.toLocaleString()}</span> had
-        a page we could read.
-      </motion.p>
+      <div className="w-full max-w-5xl mx-auto">
+        <motion.p
+          className="text-[18px] sm:text-[21px] text-gray-500"
+          initial={reduce ? false : { opacity: 0, y: 10 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true, margin: "-15%" }}
+          transition={{ duration: 0.6, ease: EASE_OUT }}
+        >
+          We found <span className="text-gray-900 font-medium tabular-nums">{total.toLocaleString("en-AU")}</span> cafes:
+        </motion.p>
 
-      <motion.div
-        className="mt-8 sm:mt-12 [@media(max-height:480px)_and_(orientation:landscape)]:mt-4 mx-auto grid grid-cols-1 sm:grid-cols-3 w-full max-w-xs sm:max-w-3xl divide-y sm:divide-y-0 sm:divide-x divide-gray-200"
-        initial={reduce ? false : { opacity: 0 }}
-        whileInView={{ opacity: 1 }}
-        viewport={{ once: true, margin: "-15%" }}
-        transition={{ duration: 0.8 }}
-      >
-        {[
-          { n: silent,    label: "say nothing" },
-          // The middle class, in its own words rather than in ours: these cafes say
-          // "Japanese matcha" and stop, which is a real disclosure and still not an answer
-          // to where. Quoting it keeps the row from reading as a softer kind of silence.
-          { n: japanOnly, label: "say \u201CJapanese\u201D" },
-          // "name the region" rather than "say where". The row above already says
-          // "Japanese", and Japan is a where — so "say where" drew no line between the two
-          // classes it exists to separate. Region is the actual threshold between them:
-          // 89 of these 100 name one (Uji, Shizuoka, Fukuoka, Yame), and the rest name the
-          // tea house itself, which is narrower still. The verb carries the escalation too:
-          // the first two rows say something, this one names it.
-          { n: verified,  label: "name the region" },
-        ].map((s, i) => (
-          // Staggered left to right so the three land in funnel order rather than
-          // together — the drop from one figure to the next is the point.
-          <motion.div
-            key={s.label}
-            className="py-4 sm:py-0 px-2 sm:px-6 text-center"
-            initial={reduce ? false : { opacity: 0, y: 14 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true, margin: "-15%" }}
-            transition={{ duration: 0.55, ease: EASE_OUT, delay: i * 0.1 }}
-          >
-            <div className="font-display text-[3.25rem] min-[390px]:text-[3.75rem] sm:text-8xl [@media(max-height:480px)_and_(orientation:landscape)]:text-5xl font-bold text-gray-900 leading-none">
-              <Counter value={s.n} />
-            </div>
-            <div className="text-[17px] sm:text-[19px] [@media(max-height:480px)_and_(orientation:landscape)]:text-[13px] text-gray-500 mt-1.5 sm:mt-4 [@media(max-height:480px)_and_(orientation:landscape)]:mt-1.5 sm:whitespace-nowrap">
-              {s.label}
-            </div>
-          </motion.div>
-        ))}
-      </motion.div>
+        {/* Two across below lg: four 96px figures do not fit a tablet-width row. */}
+        <ul className="mt-8 sm:mt-12 [@media(max-height:480px)_and_(orientation:landscape)]:mt-4 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-x-8 lg:gap-x-12 sm:gap-y-10 lg:gap-y-0">
+          {figures.map((f, i) => (
+            // The column owns the in-view trigger and hands it to the track through
+            // variants. The fill cannot watch the viewport itself: it starts at
+            // scaleX(0), a zero-width box, and the observer never reported the widest
+            // one as visible — so the largest class on the card drew nothing.
+            <motion.li
+              key={f.key}
+              className="border-t border-gray-200 pt-6 pb-8 sm:pb-0 sm:pt-8"
+              initial={reduce ? false : "hidden"}
+              whileInView="show"
+              viewport={{ once: true, margin: "-15%" }}
+              variants={{
+                hidden: { opacity: 0, y: 14 },
+                show:   { opacity: 1, y: 0, transition: { duration: 0.55, ease: EASE_OUT, delay: i * 0.1 } },
+              }}
+            >
+              <div
+                className="font-display font-bold leading-none tracking-tight text-gray-900 text-[3.5rem] min-[390px]:text-[4rem] sm:text-[4.5rem] lg:text-[5.25rem] xl:text-8xl [@media(max-height:480px)_and_(orientation:landscape)]:text-5xl"
+                style={f.ink ? { color: f.ink } : undefined}
+              >
+                <Counter value={f.n} />
+              </div>
 
-      {/* The method, stated once on the whole page, and placed where it answers a question
-          the reader now has. Above the numbers it was a preamble; under them it is the
-          receipt. "does say" still hinges off the headline's "won't tell you".
-          The second sentence is scoped on purpose. It used to promise "quoted exactly what
-          they do say, dated and linked" flat out, which reads as a description of every
-          listing — and only 114 of 1,147 carry a quote, a source and a date. */}
-      <motion.p
-        className="mt-12 sm:mt-16 [@media(max-height:480px)_and_(orientation:landscape)]:mt-6 max-w-xl text-center text-[16px] sm:text-[18px] [@media(max-height:480px)_and_(orientation:landscape)]:text-[14px] text-gray-600 leading-relaxed"
-        initial={reduce ? false : { opacity: 0, y: 14 }}
-        whileInView={{ opacity: 1, y: 0 }}
-        viewport={{ once: true, margin: "-15%" }}
-        transition={{ duration: 0.7, ease: EASE_EXPO, delay: 0.15 }}
-      >
-        We went to every one — website, menu, socials — and read what they publish.
-        Where a cafe <span className="text-gray-900 font-medium">does</span> say where
-        its matcha comes from, you get their exact words, the link, and the date.
-      </motion.p>
+              {/* All four tracks share one 0–total scale. It sits between the number and
+                  the label so the tracks stay level however a label wraps. */}
+              <div aria-hidden className="mt-5 sm:mt-6 relative h-1.5 rounded-full overflow-hidden" style={{ background: "rgba(28,43,26,0.08)" }}>
+                <motion.div
+                  className="absolute inset-y-0 left-0 rounded-full origin-left"
+                  style={{ width: `${total ? (f.n / total) * 100 : 0}%`, background: f.fill, minWidth: f.n > 0 ? 3 : 0 }}
+                  variants={{
+                    hidden: { scaleX: 0 },
+                    show:   { scaleX: 1, transition: { duration: 0.9, ease: EASE_EXPO, delay: 0.25 + i * 0.1 } },
+                  }}
+                />
+              </div>
+
+              <p className="mt-3 text-[17px] sm:text-[19px] [@media(max-height:480px)_and_(orientation:landscape)]:text-[14px] text-gray-700">
+                {f.label}
+              </p>
+            </motion.li>
+          ))}
+        </ul>
+      </div>
     </section>
   );
 }
