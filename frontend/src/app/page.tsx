@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import Image from "next/image";
 import { useState, useRef, useEffect } from "react";
 import {
   motion,
@@ -589,6 +590,7 @@ function HarmCard({ card, index }: { card: typeof HARM_CARDS[number]; index: num
 
 function PressRow({ card }: { card: typeof PRESS_CARDS[number] }) {
   const [open, setOpen] = useState(false);
+  const videoId = card.type === "video" ? new URL(card.url).searchParams.get("v") : null;
   return (
     <motion.div
       className="group cursor-pointer"
@@ -649,6 +651,35 @@ function PressRow({ card }: { card: typeof PRESS_CARDS[number] }) {
         className="overflow-hidden"
       >
         <div className="pb-8 pl-16 sm:pl-[4.75rem] pr-4">
+          {/* Inside the fold on purpose: collapsed, the rows stay a scannable list of
+              headlines, and the frame is for the reader who opened one. It points at the
+              same video as "Watch video" below, so it is kept out of the tab order and
+              hidden from screen readers instead of being announced as a second link. */}
+          {videoId && (
+            <a
+              href={card.url}
+              target="_blank"
+              rel="noopener noreferrer"
+              tabIndex={-1}
+              aria-hidden
+              onClick={(e) => e.stopPropagation()}
+              className="group/thumb relative block w-full max-w-[420px] aspect-video mb-5 rounded-xl overflow-hidden bg-gray-100"
+              style={{ boxShadow: "0 6px 20px rgba(15,32,16,0.10)" }}
+            >
+              <Image
+                src={`https://i.ytimg.com/vi/${videoId}/maxresdefault.jpg`}
+                alt=""
+                fill
+                sizes="(min-width: 640px) 420px, 100vw"
+                className="object-cover transition-transform duration-300 motion-safe:group-hover/thumb:scale-[1.03]"
+              />
+              <span className="absolute inset-0 flex items-center justify-center">
+                <span className="w-14 h-14 rounded-full flex items-center justify-center bg-black/60 transition-colors group-hover/thumb:bg-[#FF0000]">
+                  <Play size={20} fill="white" className="text-white ml-0.5" />
+                </span>
+              </span>
+            </a>
+          )}
           <p className="text-[16px] text-gray-500 leading-relaxed mb-5 max-w-[65ch]">
             {card.quote}
           </p>
