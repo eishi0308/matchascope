@@ -13,6 +13,11 @@ export const metadata: Metadata = {
     description: "Evidence-backed transparency ratings for matcha cafes across Australia.",
     type: "website",
   },
+  twitter: {
+    card: "summary_large_image",
+    title: "MatchaScope — Transparency Map",
+    description: "Evidence-backed transparency ratings for matcha cafes across Australia.",
+  },
 };
 
 export default function RootLayout({

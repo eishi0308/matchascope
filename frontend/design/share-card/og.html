@@ -1,0 +1,94 @@
+<!doctype html>
+<html>
+<head>
+<meta charset="utf-8">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@500;600;700&family=Playfair+Display:ital,wght@0,700;1,700&display=block" rel="stylesheet">
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body { width: 1200px; height: 630px; overflow: hidden; }
+  body { font-family: Inter, system-ui, sans-serif; -webkit-font-smoothing: antialiased; }
+
+  .card {
+    --bg: #fdfcf7; --ink: #111827; --accent: #2e6027; --muted: #6b7280;
+    --pill-bg: #eaf4e5; --pill-ink: #2e6027;
+    --a: #2e6027; --b: #6eb35c; --c: #9ca3af; --d: #e1e3e6;
+        position: relative; width: 1200px; height: 630px; overflow: hidden;
+    padding: 68px 80px 100px;
+    display: flex; flex-direction: column; justify-content: space-between;
+    background: var(--bg); color: var(--ink);
+  }
+  .dark .card {
+    --bg: #0e180d; --ink: #f4f3ec; --accent: #97cc86; --muted: #8f998d;
+    --pill-bg: rgba(151,204,134,0.12); --pill-ink: #b9dcae;
+    --a: #6eb35c; --b: #b5dca8; --c: #6b7280; --d: #3a4338;
+      }
+
+  .glow { position: absolute; inset: 0; pointer-events: none;
+    background: radial-gradient(ellipse 50% 65% at 92% 0%, rgba(110,179,92,0.17), transparent 70%); }
+  .dark .glow {
+    background:
+      radial-gradient(ellipse 55% 75% at 90% 0%, rgba(77,151,64,0.30), transparent 70%),
+      radial-gradient(ellipse 45% 55% at 0% 100%, rgba(77,151,64,0.10), transparent 70%); }
+  .card > *:not(.glow) { position: relative; }
+
+  /* Top row */
+  .top { display: flex; align-items: center; justify-content: space-between; }
+  .brand { display: flex; align-items: center; gap: 16px; }
+  .mark { width: 54px; height: 54px; border-radius: 50%; display: flex; align-items: center; justify-content: center;
+    background: linear-gradient(140deg, #3c7a32 0%, #2e6027 45%, #6eb35c 100%);
+    box-shadow: inset 0 1px 0 rgba(255,255,255,0.28), 0 3px 10px rgba(46,96,39,0.28); }
+  .wordmark { font-size: 29px; font-weight: 700; letter-spacing: -0.02em; }
+  .pill { font-size: 15px; font-weight: 600; letter-spacing: 0.16em; text-transform: uppercase;
+    color: var(--pill-ink); background: var(--pill-bg); padding: 10px 18px; border-radius: 999px; }
+
+  /* Headline — the site's own hero statement */
+  h1 { font-family: "Playfair Display", Georgia, serif; font-weight: 700;
+    font-size: 74px; line-height: 1.0; letter-spacing: -0.025em; white-space: nowrap; }
+  h1 em { font-style: italic; color: var(--accent); }
+
+  /* Finding */
+  .finding { display: flex; flex-direction: column; gap: 20px; }
+  .caption { font-size: 29px; font-weight: 500; color: var(--muted); letter-spacing: -0.01em; }
+  .caption b { color: var(--accent); font-weight: 700; }
+  .bar { display: flex; gap: 5px; height: 22px; }
+  .bar span { border-radius: 4px; }
+</style>
+</head>
+<body>
+<script>if (location.hash === "#dark") document.body.classList.add("dark");</script>
+<div class="card">
+  <div class="glow"></div>
+
+  <div class="top">
+    <div class="brand">
+      <div class="mark">
+        <svg width="32" height="32" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+          <g transform="translate(0 0.9)">
+            <path d="M9.4 2.2c-1.1 1.1-1.1 2 0 3.1s1.1 2 0 3.1" stroke="#fff" stroke-width="1.6" stroke-linecap="round" opacity="0.85"/>
+            <path d="M14.6 3.3c-.85.85-.85 1.55 0 2.4s.85 1.55 0 2.4" stroke="#fff" stroke-width="1.6" stroke-linecap="round" opacity="0.6"/>
+            <path d="M2.9 11.2a9.1 8.1 0 0 0 18.2 0z" fill="#fff"/>
+            <ellipse cx="12" cy="11.2" rx="9.4" ry="2.4" fill="#fff"/>
+            <ellipse cx="12" cy="11.2" rx="7.4" ry="1.5" fill="#2e6027"/>
+          </g>
+        </svg>
+      </div>
+      <span class="wordmark">MatchaScope</span>
+    </div>
+    <span class="pill">Sydney &amp; Melbourne</span>
+  </div>
+
+  <h1>Most cafes <em>won’t tell you</em><br>where the matcha comes from.</h1>
+
+  <div class="finding">
+    <p class="caption"><b>Only 1 in 10</b> say where theirs is from. We checked 1,147.</p>
+    <!-- Widths are the live level counts on 15 Sep 2026: A 100, B 19, C 491, D 537. -->
+    <div class="bar">
+      <span style="flex:100; background:var(--a)"></span>
+      <span style="flex:19;  background:var(--b)"></span>
+      <span style="flex:491; background:var(--c)"></span>
+      <span style="flex:537; background:var(--d)"></span>
+    </div>
+  </div>
+</div>
+</body>
+</html>

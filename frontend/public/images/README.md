@@ -10,7 +10,7 @@ Static images that ship with the site. Anything in this folder is served as-is a
 | Real photos of named places (e.g. Uji tea fields) | `images/photos/` | Few, fixed, committed to git |
 | Screenshots of this site (e.g. How it works, step 04) | `images/screenshots/` | Few, fixed, committed to git |
 | Drawn illustrations (e.g. empty states) | `images/illustrations/` | Few, fixed, committed to git |
-| Tab icon, Apple icon, share images | `src/app/icon.svg`, `src/app/apple-icon.png`, `opengraph-image.tsx` | Next.js picks these up by file name, not from here |
+| Tab icon, Apple icon, share images | `src/app/icon.svg`, `favicon.ico`, `apple-icon.png`, `opengraph-image.png` (site), `cafe/[slug]/opengraph-image.tsx` (per cafe) | Next.js picks these up by file name, not from here. Sources for the site card and icons are in `design/share-card/` |
 | Per-cafe evidence screenshots | Supabase Storage | Around 100 files that change with each crawl, kept out of git |
 | Press video thumbnails | Loaded from `i.ytimg.com` | Not copied; allowed in `next.config.js` |
 
