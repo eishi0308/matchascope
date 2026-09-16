@@ -11,7 +11,7 @@ import LevelFilter from "@/components/LevelFilter";
 import SelectMenu from "@/components/SelectMenu";
 import FavoriteButton from "@/components/FavoriteButton";
 import { useFavoriteIds } from "@/lib/favorites";
-import { Cafe, levelConfig, TransparencyLevel, City, CafeType } from "@/data/cafes";
+import { Cafe, levelConfig, TransparencyLevel, City } from "@/data/cafes";
 import { fetchCafes, fetchStats } from "@/lib/api";
 
 const MapClient = dynamic(() => import("@/components/MapClient"), {
@@ -44,13 +44,6 @@ const CITY_OPTS: { value: CityFilter; label: string }[] = [
   { value: "All",       label: "All Cities" },
   { value: "Sydney",    label: "Sydney" },
   { value: "Melbourne", label: "Melbourne" },
-];
-const TYPE_OPTS: { value: CafeType | "All"; label: string }[] = [
-  { value: "All",       label: "All Types" },
-  { value: "specialty", label: "Specialty" },
-  { value: "dessert",   label: "Dessert" },
-  { value: "cafe",      label: "Cafe" },
-  { value: "chain",     label: "Chain" },
 ];
 
 const SPRING = { type: "spring" as const, stiffness: 300, damping: 28 };
@@ -90,7 +83,6 @@ export default function MapPage() {
   // Empty array = no level filter (all levels shown)
   const [levelFilter,  setLevelFilter] = useState<TransparencyLevel[]>([]);
   const [cityFilter,   setCityFilter]  = useState<CityFilter>("All");
-  const [typeFilter,   setTypeFilter]  = useState<CafeType | "All">("All");
   const [savedOnly,    setSavedOnly]   = useState(false);
   const [selectedCafe, setSelectedCafe] = useState<Cafe | null>(null);
   const [pendingCafeId, setPendingCafeId] = useState<string | null>(null);
@@ -241,10 +233,9 @@ export default function MapPage() {
     return (
       (!q || c.name.toLowerCase().includes(q) || c.suburb.toLowerCase().includes(q) || c.city.toLowerCase().includes(q) || c.specialties.some((s) => s.toLowerCase().includes(q))) &&
       (cityFilter === "All" || c.city === cityFilter) &&
-      (typeFilter === "All" || c.type === typeFilter) &&
       (!savedOnly || favoriteIds.has(c.id))
     );
-  }), [cafes, query, cityFilter, typeFilter, savedOnly, favoriteIds]);
+  }), [cafes, query, cityFilter, savedOnly, favoriteIds]);
 
   const filtered = useMemo(
     () => (levelFilter.length === 0 ? baseFiltered : baseFiltered.filter((c) => levelFilter.includes(c.level))),
@@ -263,8 +254,8 @@ export default function MapPage() {
     );
 
   const activeFilters =
-    (levelFilter.length > 0 ? 1 : 0) + [cityFilter, typeFilter].filter((f) => f !== "All").length + (savedOnly ? 1 : 0);
-  const clearAll = () => { setLevelFilter([]); setCityFilter("All"); setTypeFilter("All"); setQuery(""); setSavedOnly(false); };
+    (levelFilter.length > 0 ? 1 : 0) + (cityFilter !== "All" ? 1 : 0) + (savedOnly ? 1 : 0);
+  const clearAll = () => { setLevelFilter([]); setCityFilter("All"); setQuery(""); setSavedOnly(false); };
 
   // Keeps the URL in step with the selection so a cafe can be shared/back-buttoned to —
   // not just held in React state, which vanished the instant you copied the address bar.
@@ -277,7 +268,7 @@ export default function MapPage() {
 
   // A new result set is a new list: start again from the top of the window rather than
   // keeping a deep one from the previous filter.
-  useEffect(() => { setVisibleCount(PAGE_SIZE); }, [levelFilter, cityFilter, typeFilter, query, savedOnly]);
+  useEffect(() => { setVisibleCount(PAGE_SIZE); }, [levelFilter, cityFilter, query, savedOnly]);
 
   // Grow the window as the sentinel below the last row comes into view. rootMargin gives
   // it a screen of warning so rows exist before they are scrolled to.
@@ -441,7 +432,7 @@ export default function MapPage() {
             </motion.div>
           ) : (
             <motion.div
-              key={`${levelFilter.join("")}-${cityFilter}-${typeFilter}-${query}`}
+              key={`${levelFilter.join("")}-${cityFilter}-${query}`}
               className="space-y-1.5"
               variants={listVariants}
               initial="hidden"
@@ -617,13 +608,6 @@ export default function MapPage() {
             options={CITY_OPTS}
             neutralValue={"All" as CityFilter}
             onChange={setCityFilter}
-          />
-          <SelectMenu
-            label="Type"
-            value={typeFilter}
-            options={TYPE_OPTS}
-            neutralValue={"All" as CafeType | "All"}
-            onChange={setTypeFilter}
           />
 
           <motion.button
