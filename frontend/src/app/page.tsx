@@ -1306,7 +1306,7 @@ export default function HomePage() {
                 concealment would contradict the standard the rest of the page holds
                 itself to. */}
             <motion.div
-              className="mb-14 sm:mb-20"
+              className="mb-14 sm:mb-20 text-center"
               initial={{ opacity: 0, y: 22 }}
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true, margin: "-80px" }}
@@ -1325,7 +1325,7 @@ export default function HomePage() {
                 Why can&rsquo;t you tell?
               </h2>
               <p
-                className="mt-5 max-w-xl leading-relaxed"
+                className="mt-5 max-w-xl mx-auto leading-relaxed"
                 style={{ fontSize: "17px", color: "rgba(255,255,255,0.55)" }}
               >
                 Two facts, both legal.
