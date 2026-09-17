@@ -1337,8 +1337,21 @@ export default function HomePage() {
             ))}
           </div>
 
+          {/* Divider line — "why it happens" and "who pays" are two chapters, and at
+              a paragraph's gap the harm heading read as a fourth step of the chain.
+              The same break, spacing and draw-in as the one above "Why It Happens". */}
+          <div className="max-w-6xl mx-auto">
+            <motion.div
+              style={{ height: 1, background: "linear-gradient(90deg, transparent, rgba(255,255,255,0.1) 20%, rgba(255,255,255,0.1) 80%, transparent)" }}
+              initial={{ scaleX: 0 }}
+              whileInView={{ scaleX: 1 }}
+              viewport={{ once: true }}
+              transition={{ duration: 1.2, ease: EASE }}
+            />
+          </div>
+
           {/* Harm split — who actually pays for the silence */}
-          <div className="max-w-4xl mx-auto pb-16 sm:pb-20">
+          <div className="max-w-4xl mx-auto py-16 sm:py-20">
             <div className="text-center mb-16 sm:mb-20">
               <span
                 className="block uppercase tracking-[0.22em] font-semibold mb-5"
