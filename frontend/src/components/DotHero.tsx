@@ -276,7 +276,8 @@ function startEngine(root: HTMLElement, cafes: CafePoint[], geo: Geo, go: (url: 
     end.style.visibility = "hidden"; end.classList.add("dh-on");
     const mTop = end.offsetTop + end.offsetHeight + (mobile ? 26 : 40);
     end.style.visibility = "";
-    const gap = mobile ? 22 : 90, mBottom = H - (mobile ? 30 : 46);
+    // On a phone the maps stop higher, so "+N further out" and the map credit get a line each.
+    const gap = mobile ? 22 : 90, mBottom = H - 46;
     const S = kmOf(FRAME.Sydney), M = kmOf(FRAME.Melbourne);
     const box = {} as Record<CityKey, { x: number; y: number; w: number; h: number }>;
     if (!mobile) {

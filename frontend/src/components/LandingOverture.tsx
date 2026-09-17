@@ -75,7 +75,8 @@ function Counter({ value, className = "", immediate = false }: { value: number; 
     const controls = animate(0, value, {
       duration: 1.5,
       ease: EASE_EXPO,
-      onUpdate: (v) => setShown(Math.round(v)) });
+      onUpdate: (v) => setShown(Math.round(v)),
+    });
     return () => controls.stop();
   }, [start, value, reduce]);
 
@@ -90,7 +91,8 @@ function Counter({ value, className = "", immediate = false }: { value: number; 
 function Reveal({
   children,
   delay = 0,
-  className = "" }: {
+  className = "",
+}: {
   children: React.ReactNode;
   delay?: number;
   className?: string;
@@ -158,7 +160,7 @@ function Findings({ stats }: { stats: Props["stats"] }) {
     >
       <div className="w-full max-w-5xl mx-auto">
         <motion.p
-          className="text-[18px] sm:text-[21px] text-gray-500"
+          className="text-center text-[18px] sm:text-[21px] text-gray-500"
           initial={reduce ? false : { opacity: 0, y: 10 }}
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true, margin: "-15%" }}
@@ -176,13 +178,14 @@ function Findings({ stats }: { stats: Props["stats"] }) {
             // one as visible — so the largest class on the card drew nothing.
             <motion.li
               key={f.key}
-              className="border-t border-gray-200 pt-6 pb-8 sm:pb-0 sm:pt-8"
+              className="border-t border-gray-200 pt-6 pb-8 sm:pb-0 sm:pt-8 text-center"
               initial={reduce ? false : "hidden"}
               whileInView="show"
               viewport={{ once: true, margin: "-15%" }}
               variants={{
                 hidden: { opacity: 0, y: 14 },
-                show:   { opacity: 1, y: 0, transition: { duration: 0.55, ease: EASE_OUT, delay: i * 0.1 } } }}
+                show:   { opacity: 1, y: 0, transition: { duration: 0.55, ease: EASE_OUT, delay: i * 0.1 } },
+              }}
             >
               <div
                 className="font-display font-bold leading-none tracking-tight text-gray-900 text-[3.5rem] min-[390px]:text-[4rem] sm:text-[4.5rem] lg:text-[5.25rem] xl:text-8xl [@media(max-height:480px)_and_(orientation:landscape)]:text-5xl"
@@ -192,14 +195,17 @@ function Findings({ stats }: { stats: Props["stats"] }) {
               </div>
 
               {/* All four tracks share one 0–total scale. It sits between the number and
-                  the label so the tracks stay level however a label wraps. */}
+                  the label so the tracks stay level however a label wraps. The fill grows
+                  out from the middle, under its centred number: anchored left, the 19 was
+                  a speck at the far edge of its column, nowhere near the figure it measures. */}
               <div aria-hidden className="mt-5 sm:mt-6 relative h-1.5 rounded-full overflow-hidden" style={{ background: "rgba(28,43,26,0.08)" }}>
                 <motion.div
-                  className="absolute inset-y-0 left-0 rounded-full origin-left"
-                  style={{ width: `${total ? (f.n / total) * 100 : 0}%`, background: f.fill, minWidth: f.n > 0 ? 3 : 0 }}
+                  className="absolute inset-y-0 rounded-full origin-center"
+                  style={{ left: `${total ? 50 - (f.n / total) * 50 : 50}%`, width: `${total ? (f.n / total) * 100 : 0}%`, background: f.fill, minWidth: f.n > 0 ? 3 : 0 }}
                   variants={{
                     hidden: { scaleX: 0 },
-                    show:   { scaleX: 1, transition: { duration: 0.9, ease: EASE_EXPO, delay: 0.25 + i * 0.1 } } }}
+                    show:   { scaleX: 1, transition: { duration: 0.9, ease: EASE_EXPO, delay: 0.25 + i * 0.1 } },
+                  }}
                 />
               </div>
 
@@ -399,7 +405,9 @@ function ConstellationMap({ verified }: { verified: Cafe[] }) {
         dots: pts.map((p) => ({
           id: p.id,
           x: 6 + ((p.lng - minLng) / spanLng) * 88,
-          y: 6 + ((maxLat - p.lat) / spanLat) * 88 })) };
+          y: 6 + ((maxLat - p.lat) / spanLat) * 88,
+        })),
+      };
     };
     return [group("Sydney"), group("Melbourne")].filter(Boolean) as {
       city: string; count: number; dots: { id: string; x: number; y: number }[];
@@ -458,7 +466,8 @@ function ConstellationMap({ verified }: { verified: Cafe[] }) {
                         transition={{
                           duration: 0.5,
                           ease: EASE_EXPO,
-                          delay: reduce ? 0 : ci * 0.15 + i * 0.012 }}
+                          delay: reduce ? 0 : ci * 0.15 + i * 0.012,
+                        }}
                         style={{ transformOrigin: `${d.x}px ${d.y}px` }}
                       />
                     ))}
