@@ -70,6 +70,40 @@ export async function fetchCafes(params?: {
   return allRows.map(rowToCafe);
 }
 
+/** The few columns the landing dot field needs, for every cafe — a fraction of `select("*")`. */
+export interface CafePoint {
+  id: string;
+  name: string;
+  suburb: string;
+  city: Cafe["city"];
+  lat: number;
+  lng: number;
+  level: Cafe["level"];
+  quote: string | null;
+}
+
+export async function fetchCafePoints(): Promise<CafePoint[]> {
+  const PAGE = 1000;
+  const rows: CafePoint[] = [];
+  for (let from = 0; ; from += PAGE) {
+    const { data, error } = await supabase
+      .from("cafes")
+      .select("id, name, suburb, city, lat, lng, level, evidence_quote")
+      .order("name")
+      .range(from, from + PAGE - 1);
+    if (error) throw new Error(error.message);
+    if (!data || data.length === 0) break;
+    for (const r of data) {
+      rows.push({
+        id: r.id, name: r.name, suburb: r.suburb, city: r.city, lat: r.lat, lng: r.lng,
+        level: r.level, quote: r.evidence_quote ?? null,
+      });
+    }
+    if (data.length < PAGE) break;
+  }
+  return rows;
+}
+
 export async function fetchCafe(id: string): Promise<Cafe> {
   const { data, error } = await supabase
     .from("cafes")

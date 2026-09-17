@@ -1137,7 +1137,7 @@ export default function HomePage() {
   const heroOpacity = useTransform(scrollY, [0, 480], [1, 0]);
 
   return (
-    <div className="min-h-screen bg-white overflow-x-hidden">
+    <div className="min-h-screen bg-white overflow-x-clip">
       <Navbar />
 
       {/* ── OVERTURE ─ new full-height sequence, plays before the original page ─ */}

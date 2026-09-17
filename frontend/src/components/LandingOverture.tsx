@@ -10,7 +10,7 @@
  * them is disabled under prefers-reduced-motion.
  */
 
-import { Fragment, useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import {
   motion,
@@ -18,11 +18,10 @@ import {
   useScroll,
   useTransform,
   useSpring,
-  useMotionValue,
   useReducedMotion,
   animate,
 } from "framer-motion";
-import { ArrowRight, ArrowDown, MapPin, Quote, ShieldCheck, ExternalLink } from "lucide-react";
+import { ArrowRight, MapPin, Quote, ShieldCheck, ExternalLink } from "lucide-react";
 import { Cafe, levelConfig } from "@/data/cafes";
 import { externalUrl } from "@/lib/links";
 // Fallback figures for the first paint, before the live stats arrive. This block
@@ -31,6 +30,7 @@ import { externalUrl } from "@/lib/links";
 // database held 98 / 19 / 424. measure-coverage.mjs writes this file, so one run
 // moves the fallback and the measurement together.
 import coverage from "@/lib/crawl-coverage.json";
+import DotHero from "@/components/DotHero";
 
 const EASE_EXPO = [0.16, 1, 0.3, 1] as const;
 const EASE_OUT  = [0.25, 0.46, 0.45, 0.94] as const;
@@ -47,61 +47,6 @@ interface Props {
 }
 
 /* ────────────────────────────────────────────────────────────── primitives ── */
-
-/** Headline that assembles itself character by character. */
-function SplitHeadline({
-  text,
-  className = "",
-  delay = 0,
-  style,
-}: {
-  text: string;
-  className?: string;
-  delay?: number;
-  style?: React.CSSProperties;
-}) {
-  const reduce = useReducedMotion();
-  // Split to words first, then to characters *inside* each word. Splitting
-  // straight to characters lets a line wrap mid-word ("matc / ha.").
-  const words = useMemo(() => text.split(" "), [text]);
-
-  if (reduce) return <span className={className} style={style}>{text}</span>;
-
-  let index = 0;
-
-  return (
-    <motion.span
-      className={className}
-      style={style}
-      initial="hidden"
-      animate="show"
-      aria-label={text}
-      variants={{ show: { transition: { staggerChildren: 0.018, delayChildren: delay } } }}
-    >
-      {words.map((word, w) => (
-        // The space sits *outside* the nowrap wrapper: inside it, a trailing
-        // space is collapsed away and the words run together ("Findcafes").
-        <Fragment key={`${word}-${w}`}>
-          <span className="inline-block whitespace-nowrap" aria-hidden>
-            {Array.from(word).map((c) => (
-              <motion.span
-                key={`${c}-${index++}`}
-                className="inline-block"
-                variants={{
-                  hidden: { opacity: 0, y: "0.35em", rotateX: -55 },
-                  show:   { opacity: 1, y: 0, rotateX: 0, transition: { duration: 0.65, ease: EASE_EXPO } },
-                }}
-              >
-                {c}
-              </motion.span>
-            ))}
-          </span>
-          {w < words.length - 1 && " "}
-        </Fragment>
-      ))}
-    </motion.span>
-  );
-}
 
 /** Counts up to `value` the first time it scrolls into view. */
 // `immediate` is for figures that are above the fold by construction. The -15% viewport
@@ -130,8 +75,7 @@ function Counter({ value, className = "", immediate = false }: { value: number; 
     const controls = animate(0, value, {
       duration: 1.5,
       ease: EASE_EXPO,
-      onUpdate: (v) => setShown(Math.round(v)),
-    });
+      onUpdate: (v) => setShown(Math.round(v)) });
     return () => controls.stop();
   }, [start, value, reduce]);
 
@@ -142,47 +86,11 @@ function Counter({ value, className = "", immediate = false }: { value: number; 
   );
 }
 
-/** Button that leans toward the cursor. */
-function Magnetic({
-  children,
-  strength = 0.35,
-  className = "inline-block",
-}: {
-  children: React.ReactNode;
-  strength?: number;
-  className?: string;
-}) {
-  const ref    = useRef<HTMLDivElement>(null);
-  const reduce = useReducedMotion();
-  const x = useSpring(useMotionValue(0), { stiffness: 260, damping: 18 });
-  const y = useSpring(useMotionValue(0), { stiffness: 260, damping: 18 });
-
-  if (reduce) return <div className={className}>{children}</div>;
-
-  return (
-    <motion.div
-      ref={ref}
-      className={className}
-      style={{ x, y }}
-      onMouseMove={(e) => {
-        const r = ref.current?.getBoundingClientRect();
-        if (!r) return;
-        x.set((e.clientX - (r.left + r.width / 2)) * strength);
-        y.set((e.clientY - (r.top + r.height / 2)) * strength);
-      }}
-      onMouseLeave={() => { x.set(0); y.set(0); }}
-    >
-      {children}
-    </motion.div>
-  );
-}
-
 /** Reveals its children on scroll, wiping upward from a clipped baseline. */
 function Reveal({
   children,
   delay = 0,
-  className = "",
-}: {
+  className = "" }: {
   children: React.ReactNode;
   delay?: number;
   className?: string;
@@ -198,136 +106,6 @@ function Reveal({
     >
       {children}
     </motion.div>
-  );
-}
-
-/* ───────────────────────────────────────────────────────────────── act one ── */
-
-function Hero() {
-  const reduce  = useReducedMotion();
-  const ref     = useRef<HTMLElement>(null);
-
-  const { scrollYProgress } = useScroll({ target: ref, offset: ["start start", "end start"] });
-  const headlineY = useTransform(scrollYProgress, [0, 1], ["0%", reduce ? "0%" : "38%"]);
-  const fade      = useTransform(scrollYProgress, [0, 0.75], [1, reduce ? 1 : 0]);
-  const glowY     = useTransform(scrollYProgress, [0, 1], ["0%", reduce ? "0%" : "-22%"]);
-
-  return (
-    <section
-      ref={ref}
-      // Vertical rhythm is tighter below sm. The hero promises a first screen, and the
-      // desktop spacing spent 136px of a 568px phone on padding alone, which pushed the
-      // figures — the part that earns the search — under the fold on short devices.
-      // pt-[4.5rem] still clears the 64px fixed navbar with room to spare.
-      className="relative min-h-[100dvh] flex flex-col items-center justify-center px-5 pt-[4.5rem] pb-8 sm:pt-20 sm:pb-14 [@media(max-height:480px)_and_(orientation:landscape)]:pt-[4.5rem] [@media(max-height:480px)_and_(orientation:landscape)]:pb-6 overflow-hidden"
-    >
-      {/* Parallax ground — three layers, slowest at the back */}
-      <motion.div aria-hidden className="absolute inset-0 -z-10" style={{ y: glowY }}>
-        <div
-          className="absolute left-1/2 top-[18%] h-[560px] w-[900px] max-w-[130vw] -translate-x-1/2 rounded-full"
-          style={{ background: "radial-gradient(closest-side, rgba(110,179,92,0.20), transparent 72%)" }}
-        />
-        <div
-          className="absolute left-1/2 top-[42%] h-[420px] w-[620px] max-w-[110vw] -translate-x-1/2 rounded-full"
-          style={{ background: "radial-gradient(closest-side, rgba(46,96,39,0.13), transparent 70%)" }}
-        />
-      </motion.div>
-
-      <motion.div style={{ y: headlineY, opacity: fade }} className="w-full max-w-4xl mx-auto text-center">
-        {/* Eyebrow */}
-        <motion.div
-          className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full mb-4 sm:mb-6 [@media(max-height:480px)_and_(orientation:landscape)]:mb-2"
-          style={{ background: "#f2f8f0", border: "1px solid #c2e1b5" }}
-          initial={reduce ? false : { opacity: 0, y: -10 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.6, ease: EASE_OUT }}
-        >
-          <motion.span
-            className="w-1.5 h-1.5 rounded-full bg-matcha-500"
-            animate={reduce ? {} : { opacity: [1, 0.3, 1] }}
-            transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }}
-          />
-          <span className="text-[16px] font-semibold tracking-widest uppercase text-matcha-700">
-            Sydney &amp; Melbourne
-          </span>
-        </motion.div>
-
-        {/* Statement.
-            It used to read "Find cafes honest about matcha." Two things were wrong with it.
-            "Find cafes" is a directory instruction, so the page opened on a utility rather
-            than on what we actually found. And "honest" is an adjective — the word the
-            evidence section three screens down explicitly refuses ("Proof, not adjectives"),
-            so the loudest type on the site contradicted its own standard. The headline now
-            states the finding, which is a behaviour anyone can check, and the accent falls
-            on the verb rather than on a character judgement. */}
-        {/* Size steps down only below 360px. From 360 up this is the same 2.5rem it has
-            always been, and from sm up the same clamp — the narrowest phones were the only
-            ones where a 40px display face wrapped this sentence to six lines. */}
-        <h1 className="font-display font-bold leading-[0.92] tracking-tight text-gray-900 text-[length:clamp(2.4rem,14.5vw,3.5rem)] sm:text-[length:clamp(3.5rem,7vw,5.5rem)] [@media(max-height:480px)_and_(orientation:landscape)]:text-[2.25rem]"
-            style={{ perspective: 800 }}>
-          <SplitHeadline text="Most cafes" />
-          <br />
-          <SplitHeadline text="won’t tell you" delay={0.18} className="italic text-matcha-700" />
-          <br />
-          <SplitHeadline text="where the matcha" delay={0.3} />
-          <br />
-          <SplitHeadline text="comes from." delay={0.42} />
-        </h1>
-
-        {/* The search field is gone — this is now a single, unambiguous CTA rather than a
-            form with a button attached to it. Nothing else on the first screen offers a
-            second way to leave the page, so the button can afford to be the visually
-            heaviest object here instead of splitting weight with an input beside it. */}
-        <motion.div
-          className="mt-8 sm:mt-11 [@media(max-height:480px)_and_(orientation:landscape)]:mt-5 flex justify-center"
-          initial={reduce ? false : { opacity: 0, y: 18 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.7, ease: EASE_EXPO, delay: 0.88 }}
-        >
-          <Magnetic strength={0.22}>
-            <Link
-              href="/map"
-              className="group/cta inline-flex items-center justify-center gap-2.5 px-9 sm:px-12 py-5 sm:py-6 [@media(max-height:480px)_and_(orientation:landscape)]:py-3 rounded-full text-[19px] sm:text-[21px] [@media(max-height:480px)_and_(orientation:landscape)]:text-[17px] font-semibold text-white whitespace-nowrap focus-visible:ring-4 focus-visible:ring-matcha-300 outline-none"
-              style={{
-                background: "linear-gradient(135deg,#2e6027,#4d9740)",
-                boxShadow: "0 14px 36px rgba(46,96,39,0.38), 0 3px 10px rgba(46,96,39,0.22)",
-              }}
-            >
-              Explore the map
-              <motion.span
-                className="inline-flex"
-                animate={reduce ? {} : { x: [0, 4, 0] }}
-                transition={{ duration: 1.8, repeat: Infinity, ease: "easeInOut" }}
-              >
-                <ArrowRight size={21} />
-              </motion.span>
-            </Link>
-          </Magnetic>
-        </motion.div>
-
-      </motion.div>
-
-      {/* Scroll cue. Dropped on short viewports: the 720px cutoff below was measured before
-          this session added the "Of 1,147 cafes found..." caption and the two-figure stat
-          block above it — that new content sits on the same horizontal centreline as this
-          arrow (both are centred on the section), and a reader's own screenshot showed the
-          arrow drifting into the gap between the two figures, on top of the divider between
-          them. 820px gives the taller content room to clear the arrow on more screens; it is
-          still an estimate, not a re-measurement — this needs confirming in an actual
-          browser, since nothing in this session can render and check the real pixel gap.
-          It is decorative and aria-hidden regardless, so on a screen with no room to spare
-          it is the first thing that should go — a screen that full already shows content
-          continuing. */}
-      <motion.div
-        aria-hidden
-        className="absolute bottom-7 left-1/2 -translate-x-1/2 text-gray-400 [@media(max-height:820px)]:hidden"
-        style={{ opacity: fade }}
-        animate={reduce ? {} : { y: [0, 8, 0] }}
-        transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }}
-      >
-        <ArrowDown size={18} />
-      </motion.div>
-    </section>
   );
 }
 
@@ -404,8 +182,7 @@ function Findings({ stats }: { stats: Props["stats"] }) {
               viewport={{ once: true, margin: "-15%" }}
               variants={{
                 hidden: { opacity: 0, y: 14 },
-                show:   { opacity: 1, y: 0, transition: { duration: 0.55, ease: EASE_OUT, delay: i * 0.1 } },
-              }}
+                show:   { opacity: 1, y: 0, transition: { duration: 0.55, ease: EASE_OUT, delay: i * 0.1 } } }}
             >
               <div
                 className="font-display font-bold leading-none tracking-tight text-gray-900 text-[3.5rem] min-[390px]:text-[4rem] sm:text-[4.5rem] lg:text-[5.25rem] xl:text-8xl [@media(max-height:480px)_and_(orientation:landscape)]:text-5xl"
@@ -422,8 +199,7 @@ function Findings({ stats }: { stats: Props["stats"] }) {
                   style={{ width: `${total ? (f.n / total) * 100 : 0}%`, background: f.fill, minWidth: f.n > 0 ? 3 : 0 }}
                   variants={{
                     hidden: { scaleX: 0 },
-                    show:   { scaleX: 1, transition: { duration: 0.9, ease: EASE_EXPO, delay: 0.25 + i * 0.1 } },
-                  }}
+                    show:   { scaleX: 1, transition: { duration: 0.9, ease: EASE_EXPO, delay: 0.25 + i * 0.1 } } }}
                 />
               </div>
 
@@ -623,9 +399,7 @@ function ConstellationMap({ verified }: { verified: Cafe[] }) {
         dots: pts.map((p) => ({
           id: p.id,
           x: 6 + ((p.lng - minLng) / spanLng) * 88,
-          y: 6 + ((maxLat - p.lat) / spanLat) * 88,
-        })),
-      };
+          y: 6 + ((maxLat - p.lat) / spanLat) * 88 })) };
     };
     return [group("Sydney"), group("Melbourne")].filter(Boolean) as {
       city: string; count: number; dots: { id: string; x: number; y: number }[];
@@ -684,8 +458,7 @@ function ConstellationMap({ verified }: { verified: Cafe[] }) {
                         transition={{
                           duration: 0.5,
                           ease: EASE_EXPO,
-                          delay: reduce ? 0 : ci * 0.15 + i * 0.012,
-                        }}
+                          delay: reduce ? 0 : ci * 0.15 + i * 0.012 }}
                         style={{ transformOrigin: `${d.x}px ${d.y}px` }}
                       />
                     ))}
@@ -819,7 +592,7 @@ export default function LandingOverture({ stats, verified }: Props) {
         className="fixed top-16 left-0 right-0 h-[2px] origin-left z-[90]"
         style={{ scaleX: progress, background: "linear-gradient(90deg,#2e6027,#6eb35c)" }}
       />
-      <Hero />
+      <DotHero />
       <Findings stats={stats} />
       <VerifiedMarquee verified={verified} />
       <DisclosureStat stats={stats} />
