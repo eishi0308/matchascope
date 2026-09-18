@@ -440,7 +440,7 @@ function startEngine(root: HTMLElement, cafes: CafePoint[], geo: Geo, go: (url: 
       ctx.globalAlpha = d.alpha;
       ctx.beginPath(); ctx.arc(x, y, r * (1 + .5 * Math.sin(Math.PI * L) * (1 - s1)), 0, 7);
       ctx.fillStyle = `rgb(${rgb})`; ctx.fill();
-      if (d.said && s2 > 0) { ctx.globalAlpha = d.alpha * s2; ctx.lineWidth = 1; ctx.strokeStyle = "#fdfcf7"; ctx.stroke(); }
+      if (d.said && s2 > 0) { ctx.globalAlpha = d.alpha * s2; ctx.lineWidth = 1; ctx.strokeStyle = "#fff"; ctx.stroke(); }
     }
     // A bloom as each cafe that says where switches on, then a faint resting glow on the first screen.
     for (const h of halos) {
@@ -452,7 +452,7 @@ function startEngine(root: HTMLElement, cafes: CafePoint[], geo: Geo, go: (url: 
     if (hover && hover.alpha > .2) {
       const R = Math.max(hover.r * 2.1, 6);
       ctx.globalAlpha = 1;
-      ctx.beginPath(); ctx.arc(hover.x, hover.y, R + 3.5, 0, 7); ctx.fillStyle = "rgba(253, 252, 247, .96)"; ctx.fill();
+      ctx.beginPath(); ctx.arc(hover.x, hover.y, R + 3.5, 0, 7); ctx.fillStyle = "rgba(255, 255, 255, .96)"; ctx.fill();
       ctx.beginPath(); ctx.arc(hover.x, hover.y, R, 0, 7); ctx.fillStyle = `rgb(${hover.rgb})`; ctx.fill();
       ctx.beginPath(); ctx.arc(hover.x, hover.y, R + 3.5, 0, 7); ctx.strokeStyle = "rgba(17, 24, 39, .85)"; ctx.lineWidth = 1.5; ctx.stroke();
     }

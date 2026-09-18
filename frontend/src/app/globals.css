@@ -271,7 +271,7 @@ p, li, blockquote { text-wrap: pretty; }
 /* ── Landing dot hero (components/DotHero.tsx) ──────────────────────────────
    One pinned screen plus one screen of travel. Classes are prefixed dh- because the
    engine writes some of this markup (tooltip, results, map labels) as strings. */
-.dot-hero { position: relative; height: 200svh; background: #fdfcf7; color: #111827; }
+.dot-hero { position: relative; height: 200svh; background: #fff; color: #111827; }
 .dot-hero.dh-static { height: 100svh; }
 .dh-stage { position: sticky; top: 0; height: 100svh; overflow: hidden; }
 .dh-field { position: absolute; inset: 0; width: 100%; height: 100%; touch-action: pan-y; }
