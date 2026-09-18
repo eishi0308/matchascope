@@ -135,7 +135,6 @@ const hex = (h: string) => [1, 3, 5].map((i) => parseInt(h.slice(i, i + 2), 16))
 const norm = (s: string) => s.toLowerCase().normalize("NFKD").replace(/[\u0300-\u036f]/g, "");
 const esc = (s: string) => s.replace(/[&<>"]/g, (ch) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[ch] as string));
 const quant = (arr: number[], q: number) => { const s = [...arr].sort((a, b) => a - b); return s[Math.floor(q * (s.length - 1))]; };
-const subKey = (c: CafePoint) => c.suburb.replace(/\s+(NSW|VIC)\b.*$/i, "").replace(/\s+\d{4}.*$/, "").trim();
 
 function rng(seed: number) {
   return () => { seed |= 0; seed = seed + 0x6d2b79f5 | 0; let t = Math.imul(seed ^ seed >>> 15, 1 | seed); t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t; return ((t ^ t >>> 14) >>> 0) / 4294967296; };
@@ -172,7 +171,7 @@ function startEngine(root: HTMLElement, cafes: CafePoint[], geo: Geo, go: (url: 
   /* Data → dots */
   const N = cafes.length;
   const SAID = cafes.filter((c) => c.level === "A" || c.level === "B").length;
-  const GREY = hex(LEVEL.C.color), MAPGREY: Record<"C" | "D", number[]> = { C: hex("#a29e90"), D: hex("#cdc8ba") };
+  const GREY = hex(LEVEL.C.color), MAPGREY: Record<"C" | "D", number[]> = { C: hex("#8c877a"), D: hex("#b9b4a6") };
   const slots = shuffle(Array.from({ length: N }, (_, i) => i));
   const dots: Dot[] = cafes.map((c, i) => ({
     c, url: cafeUrl(c), lvl: c.level as Level, said: c.level === "A" || c.level === "B", rgb: hex(LEVEL[c.level as Level].color),
@@ -204,12 +203,6 @@ function startEngine(root: HTMLElement, cafes: CafePoint[], geo: Geo, go: (url: 
     HUB[c] = { la: quant(la, .5), lo: quant(lo, .5) };
   }
   const inFrame = (x: CafePoint) => { const f = FRAME[x.city as CityKey]; return x.lat >= f.la[0] && x.lat <= f.la[1] && x.lng >= f.lo[0] && x.lng <= f.lo[1]; };
-  const SUBURBS = {} as Record<CityKey, { key: string; name: string }[]>;
-  for (const c of CITIES) {
-    const groups = new Map<string, number>();
-    for (const x of cafes) if (x.city === c && inFrame(x)) groups.set(subKey(x), (groups.get(subKey(x)) || 0) + 1);
-    SUBURBS[c] = Array.from(groups).sort((a, b) => b[1] - a[1]).map(([k]) => ({ key: k, name: k.toLowerCase() === c.toLowerCase() ? "CBD" : k }));
-  }
   const kmOf = (f: Frame) => { const mid = (f.la[0] + f.la[1]) / 2 * Math.PI / 180; return { w: (f.lo[1] - f.lo[0]) * 111.32 * Math.cos(mid), h: (f.la[1] - f.la[0]) * 110.57 }; };
 
   /* Layout */
@@ -318,22 +311,9 @@ function startEngine(root: HTMLElement, cafes: CafePoint[], geo: Geo, go: (url: 
     for (const d of dots) d.far = clamp(d.farPx / (maxFar[d.city] || 1));
     dodge(dots.filter((d) => d.onMap));
 
-    // A few data-picked suburb names, each just above its own cluster so it never sits on the dots.
     marksEl.innerHTML = "";
     for (const c of CITIES) {
-      const p = panels[c], placed: { x: number; y: number }[] = [], want = mobile ? 2 : 3;
-      for (const sb of SUBURBS[c]) {
-        if (placed.length >= want) break;
-        const members = dots.filter((d) => d.onMap && d.city === c && subKey(d.c) === sb.key);
-        if (members.length < 5) continue;
-        const x = quant(members.map((d) => d.mx), .5), y = Math.min(...members.map((d) => d.my)) - rMap.A - 4;
-        if (x < p.x + 36 || x > p.x + p.w - 36 || y < p.y + 12) continue;
-        if (placed.some((o) => Math.abs(o.x - x) < (mobile ? 90 : 130) && Math.abs(o.y - y) < 34)) continue;
-        placed.push({ x, y });
-        const span = document.createElement("span"); span.className = "dh-sub"; span.textContent = sb.name;
-        span.style.left = `${x}px`; span.style.top = `${y}px`; marksEl.appendChild(span);
-      }
-      const outside = cafes.filter((x) => x.city === c && !inFrame(x)).length;
+      const p = panels[c], outside = cafes.filter((x) => x.city === c && !inFrame(x)).length;
       if (outside) {
         const span = document.createElement("span"); span.className = "dh-far"; span.textContent = `+${outside} further out`;
         span.style.left = `${p.x + p.w}px`; span.style.top = `${p.y + p.h + 6}px`; span.style.transform = "translateX(-100%)";
@@ -400,6 +380,24 @@ function startEngine(root: HTMLElement, cafes: CafePoint[], geo: Geo, go: (url: 
   let hover: Dot | null = null, pinned = false, matches: Set<Dot> | null = null, activeRes = -1;
   type Halo = { x: number; y: number; r: number; L: number; rest?: number };
 
+  // Fade a map out at its frame, so the water runs off into the page instead of stopping at a ruled
+  // line. It erases, so it runs before any dot is drawn. It also runs outside the clip and reaches a
+  // little past the frame: inside the clip, the frame's antialiased last row survives as a hairline.
+  function feather(p: Panel) {
+    const F = Math.min(mobile ? 24 : 40, p.w / 4, p.h / 4), o = 2;
+    ctx.save(); ctx.globalCompositeOperation = "destination-out"; ctx.globalAlpha = 1;
+    const fade = (x0: number, y0: number, x1: number, y1: number, rx: number, ry: number, rw: number, rh: number) => {
+      const g = ctx.createLinearGradient(x0, y0, x1, y1);
+      [1, .84, .5, .16, 0].forEach((a, i) => g.addColorStop(i / 4, `rgba(0,0,0,${a})`)); // 1 − smoothstep
+      ctx.fillStyle = g; ctx.fillRect(rx, ry, rw, rh);
+    };
+    fade(p.x, 0, p.x + F, 0, p.x - o, p.y - o, F + o, p.h + 2 * o);
+    fade(p.x + p.w, 0, p.x + p.w - F, 0, p.x + p.w - F, p.y - o, F + o, p.h + 2 * o);
+    fade(0, p.y, 0, p.y + F, p.x - o, p.y - o, p.w + 2 * o, F + o);
+    fade(0, p.y + p.h, 0, p.y + p.h - F, p.x - o, p.y + p.h - F, p.w + 2 * o, F + o);
+    ctx.restore();
+  }
+
   function draw(now: number) {
     const elapsed = reduced ? 1e9 : now - t0;
     ctx.setTransform(DPR, 0, 0, DPR, 0, 0);
@@ -411,9 +409,10 @@ function startEngine(root: HTMLElement, cafes: CafePoint[], geo: Geo, go: (url: 
       for (const c of CITIES) {
         const p = panels[c];
         ctx.save(); ctx.beginPath(); ctx.rect(p.x, p.y, p.w, p.h); ctx.clip();
-        ctx.fillStyle = "#e9efe6"; for (const w of p.water) ctx.fill(w, "evenodd");
-        ctx.strokeStyle = "rgba(28, 43, 26, .16)"; ctx.lineWidth = 1; ctx.stroke(p.coast);
+        ctx.fillStyle = "#d0dccb"; for (const w of p.water) ctx.fill(w, "evenodd");
+        ctx.strokeStyle = "rgba(38, 64, 35, .36)"; ctx.lineWidth = 1; ctx.stroke(p.coast);
         ctx.restore();
+        feather(p);
       }
       ctx.restore();
     }
