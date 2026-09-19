@@ -195,13 +195,12 @@ function Findings({ stats }: { stats: Props["stats"] }) {
               </div>
 
               {/* All four tracks share one 0–total scale. It sits between the number and
-                  the label so the tracks stay level however a label wraps. The fill grows
-                  out from the middle, under its centred number: anchored left, the 19 was
-                  a speck at the far edge of its column, nowhere near the figure it measures. */}
+                  the label so the tracks stay level however a label wraps. The fill starts
+                  at the left end of its track and grows rightward, the way a gauge reads. */}
               <div aria-hidden className="mt-5 sm:mt-6 relative h-1.5 rounded-full overflow-hidden" style={{ background: "rgba(28,43,26,0.08)" }}>
                 <motion.div
-                  className="absolute inset-y-0 rounded-full origin-center"
-                  style={{ left: `${total ? 50 - (f.n / total) * 50 : 50}%`, width: `${total ? (f.n / total) * 100 : 0}%`, background: f.fill, minWidth: f.n > 0 ? 3 : 0 }}
+                  className="absolute inset-y-0 left-0 rounded-full origin-left"
+                  style={{ width: `${total ? (f.n / total) * 100 : 0}%`, background: f.fill, minWidth: f.n > 0 ? 3 : 0 }}
                   variants={{
                     hidden: { scaleX: 0 },
                     show:   { scaleX: 1, transition: { duration: 0.9, ease: EASE_EXPO, delay: 0.25 + i * 0.1 } },
