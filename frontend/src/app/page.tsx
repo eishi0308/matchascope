@@ -13,13 +13,14 @@ import {
   animate,
 } from "framer-motion";
 import {
-  Leaf, Map, Shield, Search, ArrowRight, CheckCircle2,
+  Leaf, Map, Shield, Search, ArrowRight,
   TrendingUp, Eye, FileText, MessageSquarePlus, ExternalLink, Play, User,
 } from "lucide-react";
 import Navbar from "@/components/Navbar";
 import AuthModal from "@/components/AuthModal";
 import SuggestModal from "@/components/SuggestModal";
 import MatchaMark from "@/components/MatchaMark";
+import ChapterMark, { Kicker } from "@/components/ChapterMark";
 import LandingOverture, { LandingProof } from "@/components/LandingOverture";
 import { fetchCafes, fetchStats } from "@/lib/api";
 import { Cafe, levelConfig } from "@/data/cafes";
@@ -1085,15 +1086,10 @@ function DisclosureBlock({ data }: { data: typeof DEFAULT_DISCLOSURE }) {
   );
 }
 
-function SectionLabel({ icon: Icon, text }: { icon: React.ElementType; text: string }) {
-  return (
-    <Reveal>
-      <span className="inline-flex items-center gap-2 text-matcha-700 text-[16px] font-bold tracking-[0.22em] uppercase mb-5">
-        <Icon size={10} />{text}
-      </span>
-    </Reveal>
-  );
-}
+/* A seventh label variant — an icon plus tracked caps — lived here with no call
+   sites left. Deleted rather than folded into the new one: the shared component
+   deliberately has no icon slot, because a leaf glyph beside a section name is
+   the same decoration-instead-of-information problem as the capsule was. */
 
 // ── Page ──────────────────────────────────────────────────────────────────
 
@@ -1150,23 +1146,11 @@ export default function HomePage() {
         <div className="max-w-4xl mx-auto">
           {/* Editorial lead-in */}
           <div className="mb-20">
-            <motion.div
-              className="flex items-center justify-center gap-3 mb-8"
-              initial={{ opacity: 0, y: 16 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true }}
-              transition={{ duration: 0.6, ease: EASE }}
-            >
-              <div style={{ width: 40, height: 1, background: "#2e6027" }} />
-              {/* Was "How it works" — but the section under it is the breakdown of the
-                  finding, and the actual how-it-works (Steps 01–04, "How we verify every
-                  cafe") is its own section further down. Two sections claiming the same
-                  label is why the copy beneath this one kept drifting back into method. */}
-              <span className="uppercase tracking-[0.2em] font-semibold" style={{ fontSize: "16px", color: "#2e6027" }}>
-                The breakdown
-              </span>
-              <div style={{ width: 40, height: 1, background: "#2e6027" }} />
-            </motion.div>
+            {/* This chapter was once labelled "How it works", which collided with the
+                actual how-it-works further down and is why the copy beneath it kept
+                drifting back into method. The numeral cannot collide with anything,
+                and the heading below names what the chart counts. */}
+            <ChapterMark n="01" className="text-center mb-8 sm:mb-10" />
 
             <motion.h2
               className="text-center font-display font-bold text-section"
@@ -1216,22 +1200,7 @@ export default function HomePage() {
           {/* Top section — headline & subline */}
           <div className="max-w-5xl mx-auto pt-24 sm:pt-28 pb-16 sm:pb-20">
 
-            {/* Eyebrow pill */}
-            <motion.div
-              className="flex justify-center mb-12"
-              initial={{ opacity: 0, y: 16 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true }}
-              transition={{ duration: 0.6, ease: EASE }}
-            >
-              <span
-                className="inline-flex items-center gap-2.5 px-5 py-2 rounded-full uppercase tracking-[0.22em] font-semibold"
-                style={{ fontSize: "16px", color: "#6abf5e", background: "rgba(77,151,64,0.1)", border: "1px solid rgba(77,151,64,0.2)" }}
-              >
-                <span className="w-1.5 h-1.5 rounded-full" style={{ background: "#6abf5e" }} />
-                The Problem
-              </span>
-            </motion.div>
+            <ChapterMark n="02" tone="dark" className="text-center mb-10 sm:mb-12" />
 
             {/* Massive headline */}
             <motion.h2
@@ -1312,12 +1281,7 @@ export default function HomePage() {
               viewport={{ once: true, margin: "-80px" }}
               transition={{ duration: 0.7, ease: EASE_EXPO }}
             >
-              <span
-                className="block uppercase tracking-[0.22em] font-semibold mb-5"
-                style={{ fontSize: "16px", color: "#7dd56f" }}
-              >
-                Why It Happens
-              </span>
+              <Kicker tone="dark" className="mb-5">Why It Happens</Kicker>
               <h2
                 className="font-display font-bold leading-none"
                 style={{ fontSize: "clamp(2.1rem, 6vw, 4rem)", color: "#f5f5f0", letterSpacing: "-0.02em" }}
@@ -1353,12 +1317,7 @@ export default function HomePage() {
           {/* Harm split — who actually pays for the silence */}
           <div className="max-w-4xl mx-auto py-16 sm:py-20">
             <div className="text-center mb-16 sm:mb-20">
-              <span
-                className="block uppercase tracking-[0.22em] font-semibold mb-5"
-                style={{ fontSize: "16px", color: "#7dd56f" }}
-              >
-                Who Pays For The Silence
-              </span>
+              <Kicker tone="dark" className="mb-5">Who Pays For The Silence</Kicker>
               <h3
                 className="font-bold leading-[1.08] mx-auto"
                 style={{ fontSize: "clamp(1.9rem, 4.2vw, 3rem)", color: "#f5f5f0", letterSpacing: "-0.025em", maxWidth: "28rem" }}
@@ -1384,16 +1343,10 @@ export default function HomePage() {
       <section className="py-sect px-5" style={{ background: "#fdfcf7" }}>
         <div className="max-w-5xl mx-auto">
 
-          {/* Eyebrow */}
-          <Reveal>
-            <div className="flex items-center justify-center gap-3 mb-6">
-              <div style={{ width: 40, height: 1, background: "#d1d5db" }} />
-              <span className="uppercase tracking-[0.22em] font-semibold" style={{ fontSize: "16px", color: "#9ca3af" }}>
-                As reported by
-              </span>
-              <div style={{ width: 40, height: 1, background: "#d1d5db" }} />
-            </div>
-          </Reveal>
+          {/* A caption, not a chapter: the press strip is an aside between 02 and 03,
+              and unlike the chapter labels this one is not redundant — without it the
+              logos below are a row of mastheads with no stated relationship to us. */}
+          <Kicker tone="muted" className="text-center mb-8 sm:mb-10">As reported by</Kicker>
 
           <Reveal delay={0.05}>
             <h2
@@ -1435,15 +1388,7 @@ export default function HomePage() {
 
           {/* Header */}
           <div className="text-center mb-24 sm:mb-32">
-          <Reveal>
-              <div className="flex items-center justify-center gap-3 mb-10">
-                <div style={{ width: 40, height: 1, background: "#2e6027" }} />
-                <span className="uppercase tracking-[0.22em] font-semibold" style={{ fontSize: "16px", color: "#2e6027" }}>
-                  Classification System
-                </span>
-                <div style={{ width: 40, height: 1, background: "#2e6027" }} />
-              </div>
-            </Reveal>
+            <ChapterMark n="03" className="text-center mb-8 sm:mb-10" />
             <Reveal delay={0.05}>
               <h2
                 className="font-display font-bold text-section mb-8"
@@ -1452,16 +1397,19 @@ export default function HomePage() {
                 <span style={{ color: "#2e6027" }}>4</span> levels of<br /> transparency
               </h2>
             </Reveal>
+            {/* The last capsule on the page, and by the end the only one — a tinted
+                pill with a tick icon, which is the badge every generated landing
+                page opens with. It was also the wrong dress for the content: this
+                is the standard the four grades below are held to, a sentence worth
+                reading, not a chip worth glancing at. Plain text says it with more
+                authority than a border around it ever did. */}
             <Reveal delay={0.1}>
-              <div className="flex justify-center">
-                <span
-                  className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full font-semibold"
-                  style={{ fontSize: "16px", color: "#2e6027", background: "rgba(46,96,39,0.08)", border: "1px solid rgba(46,96,39,0.18)" }}
-                >
-                  <CheckCircle2 size={13} strokeWidth={2.5} />
-                  Publicly verifiable evidence only. Never taste, never guesswork
-                </span>
-              </div>
+              <p
+                className="max-w-md mx-auto leading-relaxed"
+                style={{ fontSize: "17px", color: "#57534e" }}
+              >
+                Publicly verifiable evidence only. Never taste, never guesswork.
+              </p>
             </Reveal>
           </div>
 
@@ -1576,15 +1524,7 @@ export default function HomePage() {
 
           {/* Header */}
           <div className="text-center mb-24 sm:mb-32">
-            <Reveal>
-              <div className="flex items-center justify-center gap-3 mb-10">
-                <div style={{ width: 40, height: 1, background: "#2e6027" }} />
-                <span className="uppercase tracking-[0.22em] font-semibold" style={{ fontSize: "16px", color: "#2e6027" }}>
-                  Process
-                </span>
-                <div style={{ width: 40, height: 1, background: "#2e6027" }} />
-              </div>
-            </Reveal>
+            <ChapterMark n="04" className="text-center mb-8 sm:mb-10" />
             <Reveal delay={0.05}>
               <h2
                 /* mb-0, not mb-8: that margin existed to hold the heading off a

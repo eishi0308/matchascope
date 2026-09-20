@@ -59,7 +59,13 @@ export default function DotHero() {
           aria-label={`${TOTAL0.toLocaleString("en-AU")} dots, one per cafe. ${SAID0} are green: those cafes say where their matcha is from.`} />
 
         <header className="dh-copy dh-intro" data-dh="copy">
-          <span className="dh-pill"><i />Sydney &amp; Melbourne</span>
+          {/* No location pill above the headline. It was the first thing on the page
+              and it spent the opening beat on a fact the page states twice anyway —
+              the count line below names both cities, and the field itself splits into
+              labelled Sydney and Melbourne blocks a few seconds later. A capsule with
+              a pulsing dot is also the house style of every generated landing page,
+              and the pulse was borrowed from "● Live" status chips: nothing here was
+              live. The geography moved into the count line, where it costs no height. */}
           <h1 className="dh-h1">
             <span className="dh-ln">Most cafes</span>{" "}
             <em className="dh-ln">won’t tell you</em>
@@ -68,7 +74,7 @@ export default function DotHero() {
             <span className="dh-ln">comes from.</span>
           </h1>
           <p className="dh-count">
-            <b data-dh="count">{SAID0}</b> of <span data-dh="total">{TOTAL0.toLocaleString("en-AU")}</span> cafes say where theirs is from.
+            <b data-dh="count">{SAID0}</b> of <span data-dh="total">{TOTAL0.toLocaleString("en-AU")}</span> cafes in Sydney and Melbourne say where theirs is from.
           </p>
         </header>
 

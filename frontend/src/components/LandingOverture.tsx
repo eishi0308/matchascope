@@ -21,7 +21,8 @@ import {
   useReducedMotion,
   animate,
 } from "framer-motion";
-import { ArrowRight, MapPin, Quote, ShieldCheck, ExternalLink } from "lucide-react";
+import { ArrowRight, MapPin, Quote, ExternalLink } from "lucide-react";
+import ChapterMark, { Kicker } from "@/components/ChapterMark";
 import { Cafe, levelConfig } from "@/data/cafes";
 import { externalUrl } from "@/lib/links";
 // Fallback figures for the first paint, before the live stats arrive. This block
@@ -237,11 +238,14 @@ function VerifiedMarquee({ verified }: { verified: Cafe[] }) {
       style={{ background: "#fdfcf7", borderTop: "1px solid #eee9dc", borderBottom: "1px solid #eee9dc" }}
       aria-label="Cafes with verified disclosure"
     >
-      <div className="flex items-center justify-center gap-2.5 mb-8 px-5">
-        <ShieldCheck size={16} className="text-matcha-600 flex-shrink-0" />
-        <span className="text-[16px] uppercase tracking-[0.18em] text-gray-500 font-semibold text-center">
+      {/* The shield went with the icon rule: the shared label component has no icon
+          slot, because a glyph beside a section name is the same decoration-in-place-
+          of-information problem the capsules were. The count carries the credibility
+          the shield was miming. */}
+      <div className="mb-8 px-5">
+        <Kicker tone="muted" className="text-center">
           {names.length} cafes name the region their matcha comes from
-        </span>
+        </Kicker>
       </div>
 
       <div className="relative space-y-3">
@@ -353,9 +357,9 @@ function DisclosureStat({ stats }: { stats: Props["stats"] }) {
         </svg>
 
         <motion.div style={{ scale }} className="text-center px-5">
-          <div className="text-[16px] uppercase tracking-[0.2em] text-matcha-300 font-semibold mb-3 md:mb-5">
-            The finding
-          </div>
+          {/* Kicker, not a numbered chapter rule: the overture is the prologue —
+              the chapter count starts at "The breakdown", once the argument does. */}
+          <Kicker tone="dark" className="mb-3 md:mb-5">The finding</Kicker>
           {/* Two clamps rather than one: the phone wants a number sized to the
               shorter panel, the desktop wants it to fill the pinned frame. */}
           <div className="font-display font-bold leading-none text-white flex items-baseline justify-center text-[clamp(4rem,15vw,9.5rem)] md:text-[clamp(5rem,22vw,16rem)]">
@@ -416,10 +420,8 @@ function ConstellationMap({ verified }: { verified: Cafe[] }) {
   return (
     <section className="py-sect px-5 bg-white" aria-label="Where the verified cafes are">
       <div className="max-w-6xl mx-auto">
+        <ChapterMark n="06" className="mb-8 sm:mb-10" />
         <Reveal className="max-w-2xl">
-          <div className="text-[16px] uppercase tracking-widest text-gray-500 font-semibold mb-4">
-            The map
-          </div>
           <h2 className="font-display font-bold text-section text-gray-900">
             Every verified cafe, exactly where it stands.
           </h2>
@@ -506,11 +508,9 @@ function FeaturedCafes({ verified }: { verified: Cafe[] }) {
   return (
     <section className="py-sect px-5" style={{ background: "#fdfcf7" }} aria-label="Featured verified cafes">
       <div className="max-w-6xl mx-auto">
+        <ChapterMark n="05" className="mb-8 sm:mb-10" />
         <Reveal className="flex flex-wrap items-end justify-between gap-4 mb-12">
           <div className="max-w-xl">
-            <div className="text-[16px] uppercase tracking-widest text-gray-500 font-semibold mb-4">
-              In their own words
-            </div>
             <h2 className="font-display font-bold text-section text-gray-900">
               Proof, not adjectives.
             </h2>
