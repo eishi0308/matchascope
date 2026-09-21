@@ -386,117 +386,6 @@ function DisclosureStat({ stats }: { stats: Props["stats"] }) {
   );
 }
 
-/** Every verified cafe, plotted from its real coordinates. */
-function ConstellationMap({ verified }: { verified: Cafe[] }) {
-  const reduce = useReducedMotion();
-  const ref    = useRef<HTMLDivElement>(null);
-  const inView = useInView(ref, { once: true, margin: "-15%" });
-
-  const cities = useMemo(() => {
-    const group = (city: string) => {
-      const pts = verified.filter((c) => c.city === city);
-      if (!pts.length) return null;
-      const lats = pts.map((p) => p.lat), lngs = pts.map((p) => p.lng);
-      const [minLat, maxLat] = [Math.min(...lats), Math.max(...lats)];
-      const [minLng, maxLng] = [Math.min(...lngs), Math.max(...lngs)];
-      const spanLat = maxLat - minLat || 1;
-      const spanLng = maxLng - minLng || 1;
-      return {
-        city,
-        count: pts.length,
-        // 6% inset so no dot sits on the frame edge
-        dots: pts.map((p) => ({
-          id: p.id,
-          x: 6 + ((p.lng - minLng) / spanLng) * 88,
-          y: 6 + ((maxLat - p.lat) / spanLat) * 88,
-        })),
-      };
-    };
-    return [group("Sydney"), group("Melbourne")].filter(Boolean) as {
-      city: string; count: number; dots: { id: string; x: number; y: number }[];
-    }[];
-  }, [verified]);
-
-  return (
-    <section className="py-sect px-5 bg-white" aria-label="Where the verified cafes are">
-      <div className="max-w-6xl mx-auto">
-        <ChapterMark n="06" className="mb-8 sm:mb-10" />
-        <Reveal className="max-w-2xl">
-          <h2 className="font-display font-bold text-section text-gray-900">
-            Every verified cafe, exactly where it stands.
-          </h2>
-          <p className="mt-4 text-[16px] text-gray-600 leading-relaxed">
-            Each dot is a real cafe you can open, read and check for yourself.
-          </p>
-        </Reveal>
-
-        {/* Same minmax(0,1fr) guard as the cards above — a long city name must not be able
-            to open the mobile track wider than the screen. */}
-        <div ref={ref} className="mt-10 grid grid-cols-1 gap-5 sm:grid-cols-2">
-          {cities.map((c, ci) => (
-            <Reveal key={c.city} delay={ci * 0.12}>
-              <Link
-                // lands on exactly what the card draws: this city's verified cafes
-                href={`/map?city=${encodeURIComponent(c.city)}&level=A`}
-                className="group block rounded-3xl p-6 relative overflow-hidden focus-visible:ring-2 focus-visible:ring-matcha-500 outline-none"
-                style={{ background: "#0f2010" }}
-              >
-                <div className="flex items-baseline justify-between mb-4">
-                  <span className="font-display text-2xl font-bold text-white">{c.city}</span>
-                  <span className="text-[16px] text-matcha-300 font-semibold">
-                    {c.count} verified
-                  </span>
-                </div>
-
-                <div className="relative w-full" style={{ aspectRatio: "4 / 3" }}>
-                  <svg viewBox="0 0 100 100" className="absolute inset-0 w-full h-full overflow-visible">
-                    {/* faint grid */}
-                    {[25, 50, 75].map((v) => (
-                      <g key={v} stroke="rgba(255,255,255,0.06)" strokeWidth="0.3">
-                        <line x1={v} y1="0" x2={v} y2="100" />
-                        <line x1="0" y1={v} x2="100" y2={v} />
-                      </g>
-                    ))}
-                    {c.dots.map((d, i) => (
-                      <motion.circle
-                        key={d.id}
-                        cx={d.x} cy={d.y} r="1.5"
-                        fill="#6eb35c"
-                        initial={reduce ? false : { opacity: 0, scale: 0 }}
-                        animate={inView ? { opacity: 1, scale: 1 } : {}}
-                        transition={{
-                          duration: 0.5,
-                          ease: EASE_EXPO,
-                          delay: reduce ? 0 : ci * 0.15 + i * 0.012,
-                        }}
-                        style={{ transformOrigin: `${d.x}px ${d.y}px` }}
-                      />
-                    ))}
-                  </svg>
-                </div>
-
-                <div className="mt-5 inline-flex items-center gap-1.5 text-[16px] font-semibold text-white">
-                  Explore the map
-                  <motion.span className="inline-flex" whileHover={{ x: 3 }}>
-                    <ArrowRight size={15} />
-                  </motion.span>
-                </div>
-
-                {/* sheen on hover */}
-                <div
-                  aria-hidden
-                  className="pointer-events-none absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-500"
-                  style={{ background: "radial-gradient(600px circle at 50% 0%, rgba(110,179,92,0.16), transparent 60%)" }}
-                />
-              </Link>
-            </Reveal>
-          ))}
-        </div>
-      </div>
-    </section>
-  );
-}
-
 /** Featured listings — the pattern's "inventory" beat. */
 function FeaturedCafes({ verified }: { verified: Cafe[] }) {
   const picks = useMemo(
@@ -617,7 +506,6 @@ export function LandingProof({ verified }: { verified: Cafe[] }) {
   return (
     <>
       <FeaturedCafes verified={verified} />
-      <ConstellationMap verified={verified} />
     </>
   );
 }
