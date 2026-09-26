@@ -374,8 +374,10 @@ function MenuEvidenceCard() {
   const ref    = useRef<HTMLDivElement>(null);
   const inView = useInView(ref, { once: true, margin: "-100px" });
 
+  // Wider than it was: the Origin column and the source both have to sit on the row
+  // without squeezing the leader dots down to a stub.
   return (
-    <div ref={ref} className="w-full max-w-[680px] mx-auto">
+    <div ref={ref} className="w-full max-w-[900px] mx-auto">
       <p
         className="text-center text-[16px] mb-10"
         style={{ color: "rgba(255,255,255,0.55)" }}
@@ -384,8 +386,22 @@ function MenuEvidenceCard() {
       </p>
 
       {/* Rows, hairlines, tabular numerals — the same kit as the counts upstream.
-          Price is the only thing every one of these menus agrees to tell you. */}
-      <div role="table" aria-label="Matcha menu items quoted from cafe websites">
+          Price is the only thing every one of these menus agrees to tell you.
+
+          Hence the empty column. Stating the omission in the closing line asks the
+          reader to take it on trust; a column headed Origin, ruled for an answer and
+          empty on all fifteen rows, is the omission itself, sitting where the menu
+          would have had to put it. The blank is dashed rather than solid because it
+          is a field nobody filled in, and it is the only lit thing on the board. */}
+      <div role="table" aria-label="Matcha menu items quoted from cafe websites, with the origin each menu states">
+        <div role="row" className="flex items-baseline gap-4 pb-3 text-[11px] font-semibold uppercase tracking-[0.14em]"
+             style={{ color: "rgba(255,255,255,0.38)", borderBottom: "1px solid rgba(255,255,255,0.08)" }}>
+          <span role="columnheader" className="flex-1 min-w-0 sm:flex-none">Drink</span>
+          <span aria-hidden className="hidden sm:block flex-1 min-w-0" />
+          <span role="columnheader" className="flex-shrink-0 text-right" style={{ width: 52 }}>AUD</span>
+          <span role="columnheader" className="flex-shrink-0 text-center w-[84px] sm:w-[132px]" style={{ color: "#97cc86" }}>Origin</span>
+          <span role="columnheader" className="hidden sm:block flex-shrink-0 text-right" style={{ width: 235 }}>Menu page</span>
+        </div>
         {MENU_LINES.map((line, i) => (
           <motion.div
             key={line.source + line.item}
@@ -398,7 +414,7 @@ function MenuEvidenceCard() {
           >
             <span
               role="cell"
-              className="font-display text-[17px] sm:text-[19px] flex-shrink-0"
+              className="font-display text-[17px] sm:text-[19px] flex-1 min-w-0 sm:flex-none sm:flex-shrink-0"
               style={{ color: "rgba(255,255,255,0.92)" }}
             >
               {line.item}
@@ -407,7 +423,7 @@ function MenuEvidenceCard() {
             {/* Leader dots carry the eye to the price without drawing a rule */}
             <span
               aria-hidden
-              className="flex-1 min-w-0 self-center"
+              className="hidden sm:block flex-1 min-w-0 self-center"
               style={{
                 height: 1,
                 background:
@@ -417,10 +433,24 @@ function MenuEvidenceCard() {
 
             <span
               role="cell"
-              className="text-[16px] sm:text-[17px] tabular-nums flex-shrink-0"
-              style={{ color: "rgba(255,255,255,0.75)" }}
+              className="text-[16px] sm:text-[17px] tabular-nums flex-shrink-0 text-right"
+              style={{ color: "rgba(255,255,255,0.75)", width: 52 }}
             >
               {line.price}
+            </span>
+
+            {/* Every page behind these fifteen rows was read, and none of them names a
+                region, a farm, a supplier or a grade — all fifteen are graded C, read
+                and silent, in the same database the map draws from. So the cell is
+                blank on the same evidence the rest of the page runs on, and carries
+                that sentence for anyone reading with a screen reader. */}
+            <span role="cell" className="flex-shrink-0 w-[84px] sm:w-[132px]">
+              <span
+                aria-hidden
+                className="block h-[26px] sm:h-[30px] rounded-[3px]"
+                style={{ border: "1px dashed rgba(125,213,111,0.5)" }}
+              />
+              <span className="sr-only">Origin not stated on this menu</span>
             </span>
 
             <span
