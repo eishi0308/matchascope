@@ -100,7 +100,12 @@ const sql = [
   ...dToC.map((c) => `UPDATE cafes SET level = 'C' WHERE id = ${esc(c.id)} AND level = 'D';`),
   "COMMIT;",
 ].join("\n") + "\n";
-writeFileSync(new URL("./regrade-unread.sql", import.meta.url), sql);
+// Both files are written only when there is something to move. The second run of an
+// audit finds no disagreement — which is what a successful first run looks like — and
+// rewriting them to an empty transaction would throw away the undo for the change that
+// had just been made, at exactly the moment someone might want it.
+const anyChange = cToD.length + dToC.length > 0;
+if (anyChange) writeFileSync(new URL("./regrade-unread.sql", import.meta.url), sql);
 
 // The file that puts the grades back, written now rather than at --apply: whoever runs
 // the SQL should already hold the undo, including when that is a person running psql by
@@ -112,12 +117,12 @@ const restore = [
   ...[...cToD, ...dToC].map((c) => `UPDATE cafes SET level = ${esc(c.level)} WHERE id = ${esc(c.id)};`),
   "COMMIT;",
 ].join("\n") + "\n";
-writeFileSync(new URL("./regrade-unread-restore.sql", import.meta.url), restore);
+if (anyChange) writeFileSync(new URL("./regrade-unread-restore.sql", import.meta.url), restore);
 
 const after = { ...byLevel };
 after.C += dToC.length - cToD.length;
 after.D += cToD.length - dToC.length;
-console.log(`\nwrote regrade-unread.sql (and regrade-unread-restore.sql) — after it runs: A ${after.A}, B ${after.B}, C ${after.C}, D ${after.D}`);
+console.log(`\n${anyChange ? "wrote regrade-unread.sql and its undo — after it runs" : "nothing to move; the SQL and its undo are left as they are — grades stand at"}: A ${after.A}, B ${after.B}, C ${after.C}, D ${after.D}`);
 console.log(`the landing page's own figures for the same two classes: ${cafes.length - readCount} unread, ` +
             `${readCount - byLevel.A - byLevel.B} read and silent`);
 
