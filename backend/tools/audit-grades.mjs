@@ -102,10 +102,22 @@ const sql = [
 ].join("\n") + "\n";
 writeFileSync(new URL("./regrade-unread.sql", import.meta.url), sql);
 
+// The file that puts the grades back, written now rather than at --apply: whoever runs
+// the SQL should already hold the undo, including when that is a person running psql by
+// hand rather than this script.
+const restore = [
+  "-- Restores the grades regrade-unread.sql moves. Generated from the grades as they stand.",
+  `-- ${new Date().toISOString().slice(0, 10)}: ${cToD.length + dToC.length} cafes`,
+  "BEGIN;",
+  ...[...cToD, ...dToC].map((c) => `UPDATE cafes SET level = ${esc(c.level)} WHERE id = ${esc(c.id)};`),
+  "COMMIT;",
+].join("\n") + "\n";
+writeFileSync(new URL("./regrade-unread-restore.sql", import.meta.url), restore);
+
 const after = { ...byLevel };
 after.C += dToC.length - cToD.length;
 after.D += cToD.length - dToC.length;
-console.log(`\nwrote regrade-unread.sql — after it runs: A ${after.A}, B ${after.B}, C ${after.C}, D ${after.D}`);
+console.log(`\nwrote regrade-unread.sql (and regrade-unread-restore.sql) — after it runs: A ${after.A}, B ${after.B}, C ${after.C}, D ${after.D}`);
 console.log(`the landing page's own figures for the same two classes: ${cafes.length - readCount} unread, ` +
             `${readCount - byLevel.A - byLevel.B} read and silent`);
 
@@ -124,13 +136,6 @@ const DBUSER = prop("spring.datasource.username"), DBPASS = prop("spring.datasou
 const psql = (args) => execFileSync("psql", ["-h", url.hostname, "-p", url.port, "-U", DBUSER, "-d", url.pathname.slice(1), ...args],
   { env: { ...process.env, PGPASSWORD: DBPASS }, encoding: "utf8" });
 
-const restore = [
-  "-- Restores the grades audit-grades.mjs moved. Generated before the move.",
-  "BEGIN;",
-  ...[...cToD, ...dToC].map((c) => `UPDATE cafes SET level = ${esc(c.level)} WHERE id = ${esc(c.id)};`),
-  "COMMIT;",
-].join("\n") + "\n";
-writeFileSync(new URL("./regrade-unread-restore.sql", import.meta.url), restore);
-console.log("backup written to regrade-unread-restore.sql");
+console.log("undo: psql -f regrade-unread-restore.sql");
 console.log(psql(["-f", "regrade-unread.sql"]));
 console.log("re-run measure-coverage.mjs so the landing page's figures follow.");
