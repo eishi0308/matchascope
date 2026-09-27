@@ -1,0 +1,136 @@
+/**
+ * Does every grade agree with whether the crawl could read that cafe's page?
+ *
+ * Two of the four grades are claims about the crawl, not about the cafe:
+ *
+ *   C  "Says nothing about origin"  — we read the page, and it gives no origin
+ *   D  "Has no readable page"       — we never had the page's words in hand
+ *
+ * So a cafe graded C whose page was never read is a cafe being reported as silent on the
+ * strength of a page nobody read, which is the one thing this dataset promises not to do.
+ * The database says D = 537; the same crawl journals the landing page divides by say 700
+ * cafes were never read. The gap is not a rounding difference, it is a set of cafes, and
+ * this is what names them.
+ *
+ * The rule for "read" is imported rather than restated: crawl-read.mjs is what
+ * measure-coverage.mjs uses to produce the 447/700 on the landing page, and an audit that
+ * applied its own slightly different rule would propose moving exactly the cafes the two
+ * rules disagreed about.
+ *
+ * A and B are left alone in both directions. Both grades quote words off a page, so they
+ * were read by definition — and where a journal disagrees it is the journal that is
+ * incomplete: evidence has also come from pages read by hand and from Instagram bios that
+ * predate these files. Those are listed at the end as something to look at, never moved.
+ *
+ * Read-only by default: it prints what it would change and writes the SQL next to itself.
+ * Nothing touches the database until --apply, and --apply takes a backup first.
+ *
+ * Usage:
+ *   node audit-grades.mjs            # report + write regrade-unread.sql
+ *   node audit-grades.mjs --apply    # back up the affected grades, then run the SQL
+ */
+import { writeFileSync } from "node:fs";
+import { execFileSync } from "node:child_process";
+import { loadJournals, readState } from "./crawl-read.mjs";
+
+const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL;
+const SUPABASE_KEY = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+if (!SUPABASE_URL || !SUPABASE_KEY) {
+  console.error("set NEXT_PUBLIC_SUPABASE_URL and NEXT_PUBLIC_SUPABASE_ANON_KEY");
+  process.exit(1);
+}
+
+const cafes = [];
+for (let offset = 0; ; offset += 500) {
+  const url =
+    `${SUPABASE_URL}/rest/v1/cafes?select=id,name,suburb,city,level,evidence_quote` +
+    `&order=id.asc&offset=${offset}&limit=500`;
+  const res = await fetch(url, {
+    headers: { apikey: SUPABASE_KEY, Authorization: `Bearer ${SUPABASE_KEY}` },
+  });
+  const batch = await res.json();
+  if (!Array.isArray(batch)) { console.error(batch); process.exit(1); }
+  if (batch.length === 0) break;
+  cafes.push(...batch);
+  if (batch.length < 500) break;
+}
+
+const journals = loadJournals();
+const state = new Map(cafes.map((c) => [c.id, readState(journals, c.id)]));
+
+/** Graded silent, never read. These are the ones the figures disagree about. */
+const cToD = cafes.filter((c) => c.level === "C" && state.get(c.id) !== "read");
+/** Graded unreadable, but a journal holds the page. The mirror image, and rarer. */
+const dToC = cafes.filter((c) => c.level === "D" && state.get(c.id) === "read");
+/** Quoting a page no journal holds. Not moved — the evidence, not the grade, is the record. */
+const abUnread = cafes.filter((c) => (c.level === "A" || c.level === "B") && state.get(c.id) !== "read");
+
+const why = (id) => state.get(id);
+const tally = (rows) => {
+  const out = {};
+  for (const r of rows) out[why(r.id)] = (out[why(r.id)] || 0) + 1;
+  return Object.entries(out).map(([k, v]) => `${k} ${v}`).join(", ");
+};
+
+const byLevel = { A: 0, B: 0, C: 0, D: 0 };
+for (const c of cafes) if (c.level in byLevel) byLevel[c.level]++;
+const readCount = cafes.filter((c) => c.level === "A" || c.level === "B" || state.get(c.id) === "read").length;
+
+console.log(`${cafes.length} cafes — A ${byLevel.A}, B ${byLevel.B}, C ${byLevel.C}, D ${byLevel.D}`);
+console.log(`crawl journals: ${readCount} read, ${cafes.length - readCount} never read\n`);
+
+console.log(`C -> D  graded silent, but no page was ever read : ${cToD.length}`);
+console.log(`        (${tally(cToD)})`);
+for (const c of cToD.slice(0, 8)) console.log(`        ${c.id.padEnd(14)} ${c.name} — ${c.suburb}, ${c.city} [${why(c.id)}]`);
+if (cToD.length > 8) console.log(`        … and ${cToD.length - 8} more`);
+
+console.log(`\nD -> C  graded unreadable, but a journal holds the page : ${dToC.length}`);
+for (const c of dToC.slice(0, 8)) console.log(`        ${c.id.padEnd(14)} ${c.name} — ${c.suburb}, ${c.city}`);
+if (dToC.length > 8) console.log(`        … and ${dToC.length - 8} more`);
+
+console.log(`\nA/B with no readable page in any journal (left alone, worth a look) : ${abUnread.length}`);
+for (const c of abUnread.slice(0, 5)) console.log(`        ${c.id.padEnd(14)} ${c.level} ${c.name}${c.evidence_quote ? " — has a quote" : " — NO QUOTE"}`);
+
+const esc = (v) => `'${String(v).replace(/'/g, "''")}'`;
+const sql = [
+  "-- Grades that disagree with whether the crawl read the page. Generated by audit-grades.mjs.",
+  `-- ${new Date().toISOString().slice(0, 10)}: C -> D ${cToD.length}, D -> C ${dToC.length}`,
+  "BEGIN;",
+  ...cToD.map((c) => `UPDATE cafes SET level = 'D' WHERE id = ${esc(c.id)} AND level = 'C';`),
+  ...dToC.map((c) => `UPDATE cafes SET level = 'C' WHERE id = ${esc(c.id)} AND level = 'D';`),
+  "COMMIT;",
+].join("\n") + "\n";
+writeFileSync(new URL("./regrade-unread.sql", import.meta.url), sql);
+
+const after = { ...byLevel };
+after.C += dToC.length - cToD.length;
+after.D += cToD.length - dToC.length;
+console.log(`\nwrote regrade-unread.sql — after it runs: A ${after.A}, B ${after.B}, C ${after.C}, D ${after.D}`);
+console.log(`the landing page's own figures for the same two classes: ${cafes.length - readCount} unread, ` +
+            `${readCount - byLevel.A - byLevel.B} read and silent`);
+
+if (!process.argv.includes("--apply")) {
+  console.log("\ndry run — nothing was written to the database. Pass --apply to run it.");
+  process.exit(0);
+}
+
+// --apply: the grades being moved are backed up first, as a file that restores them.
+const prop = (key) => {
+  const line = execFileSync("grep", ["-m1", `^${key}=`, "../src/main/resources/application.properties"], { encoding: "utf8" });
+  return line.slice(line.indexOf("=") + 1).trim();
+};
+const url = new URL(prop("spring.datasource.url").replace(/^jdbc:/, ""));
+const DBUSER = prop("spring.datasource.username"), DBPASS = prop("spring.datasource.password");
+const psql = (args) => execFileSync("psql", ["-h", url.hostname, "-p", url.port, "-U", DBUSER, "-d", url.pathname.slice(1), ...args],
+  { env: { ...process.env, PGPASSWORD: DBPASS }, encoding: "utf8" });
+
+const restore = [
+  "-- Restores the grades audit-grades.mjs moved. Generated before the move.",
+  "BEGIN;",
+  ...[...cToD, ...dToC].map((c) => `UPDATE cafes SET level = ${esc(c.level)} WHERE id = ${esc(c.id)};`),
+  "COMMIT;",
+].join("\n") + "\n";
+writeFileSync(new URL("./regrade-unread-restore.sql", import.meta.url), restore);
+console.log("backup written to regrade-unread-restore.sql");
+console.log(psql(["-f", "regrade-unread.sql"]));
+console.log("re-run measure-coverage.mjs so the landing page's figures follow.");
