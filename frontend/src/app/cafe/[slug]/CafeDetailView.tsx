@@ -181,7 +181,7 @@ export default function CafeDetailView({ cafe, related }: { cafe: Cafe; related:
                   className="w-1.5 h-1.5 rounded-full"
                   style={{ background: onLight ? "#fdfcf7" : level.headerBg }}
                 />
-                {unsupported ? "Under review" : `Level ${cafe.level} · ${level.shortLabel}`}
+                {unsupported ? "Under review" : `Level ${cafe.level} · ${level.verdict}`}
               </motion.span>
 
               <motion.h1

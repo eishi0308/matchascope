@@ -351,8 +351,11 @@ export default function MapPage() {
                 >
                   {lvl}
                 </div>
+                {/* Wraps rather than truncates. The labels are sentences about the cafe
+                    now — "Says nothing about origin" — and a truncated one ("Says
+                    nothing a…") loses the word the filter is chosen by. */}
                 <div className="flex-1 min-w-0">
-                  <div className="text-[16px] font-medium text-gray-700 truncate">{cfg.shortLabel}</div>
+                  <div className="text-[15px] font-medium text-gray-700 leading-snug">{cfg.verdict}</div>
                 </div>
                 <motion.span
                   className="text-[16px] font-bold px-1.5 py-0.5 rounded-md"
@@ -907,7 +910,7 @@ export default function MapPage() {
                             <div className="w-2.5 h-2.5 rounded-full flex-shrink-0" style={{ background: cfg.color }} />
                             <span className="text-[16px] whitespace-nowrap text-gray-600">
                               <span className="font-bold" style={{ color: cfg.color }}>{lvl}</span>
-                              {" — "}{cfg.shortLabel}
+                              {" — "}{cfg.verdict}
                             </span>
                             <span className="ml-auto pl-3 text-[16px] font-semibold tabular-nums" style={{ color: cfg.color }}>
                               {levelCounts[lvl]}

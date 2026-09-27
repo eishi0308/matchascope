@@ -56,7 +56,7 @@ export default function LevelScale({
         className="flex items-center flex-wrap"
         style={{ gap: dim.gap, minHeight: activeBox }}
         role="img"
-        aria-label={`Transparency level ${level} of A to D, where A discloses most: ${cfg.shortLabel}. ${cfg.description}`}
+        aria-label={`Transparency level ${level} of A to D, where A discloses most: ${cfg.verdict}. ${cfg.description}`}
       >
         <div className="flex flex-col" style={{ gap: 5 }}>
           <div className="flex items-center" style={{ gap: dim.gap }}>
@@ -106,7 +106,7 @@ export default function LevelScale({
         </div>
 
         <span className="ml-1 font-bold" style={{ fontSize: dim.label, color: "#1f2937" }}>
-          {cfg.shortLabel}
+          {cfg.verdict}
         </span>
       </div>
 

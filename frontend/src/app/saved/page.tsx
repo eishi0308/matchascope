@@ -178,7 +178,7 @@ export default function SavedPage() {
                         className="inline-flex text-[16px] font-medium px-2.5 py-1 rounded-full"
                         style={{ background: cfg.bg, color: cfg.color }}
                       >
-                        {cfg.shortLabel}
+                        {cfg.verdict}
                       </span>
                     </Link>
                   </motion.div>

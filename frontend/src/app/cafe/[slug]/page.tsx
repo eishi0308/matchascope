@@ -53,7 +53,7 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
 
   const level = levelConfig[cafe.level];
   const canonical = `${SITE_URL}${cafeUrl(cafe)}`;
-  const title = `${cafe.name} — ${level.shortLabel} Matcha Sourcing | MatchaScope`;
+  const title = `${cafe.name} — matcha sourcing: ${level.verdict.toLowerCase()} | MatchaScope`;
   const description = cafe.evidence
     ? `"${cafe.evidence.quote}" — ${cafe.name} in ${cafe.suburb}, ${cafe.city}. ${level.description}`
     : `${cafe.name} in ${cafe.suburb}, ${cafe.city}. ${level.description} Evidence-based matcha transparency rating from MatchaScope.`;
@@ -63,7 +63,7 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
     description,
     alternates: { canonical },
     openGraph: {
-      title: `${cafe.name} — ${level.shortLabel}`,
+      title: `${cafe.name} — ${level.verdict.toLowerCase()}`,
       description,
       url: canonical,
       siteName: "MatchaScope",
@@ -72,7 +72,7 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
     },
     twitter: {
       card: "summary_large_image",
-      title: `${cafe.name} — ${level.shortLabel}`,
+      title: `${cafe.name} — ${level.verdict.toLowerCase()}`,
       description,
     },
   };

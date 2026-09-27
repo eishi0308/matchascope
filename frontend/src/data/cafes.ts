@@ -378,43 +378,59 @@ export const cafes: Cafe[] = [
 // `color`/`bg` below are untouched: they drive the small swatch dots and chips elsewhere
 // (map level filter, badges), a different contrast problem against a white page background,
 // not against each other.
+/**
+ * One vocabulary for the four grades, in the two grammatical shapes the site needs.
+ *
+ * The same four classes had grown five different sets of words — "Verified" on the map,
+ * "Names the source" in the hero legend, "name the source" under the landing figures,
+ * "Named source, with a link" in the breakdown card, and the long labels here — so a
+ * reader met the scale three times and had to learn it again each time. `verdict` is one
+ * cafe ("Names its source"), `verdictPlural` is a count of them ("100 name their source");
+ * every screen now draws from these, and changing a word means changing it once.
+ *
+ * "Verified" is gone on purpose: what was verified is that the page says so, not the tea
+ * in the cup, and the site's own rule is that it reports what a cafe publishes. "Unknown"
+ * is gone for the same reason — D is not a cafe nobody knows about, it is a cafe whose
+ * page we could not read, and the label has to carry that or the class reads as the
+ * cafe's failure rather than ours.
+ */
 export const levelConfig = {
   A: {
-    label: "Verified Japanese Disclosure",
-    shortLabel: "Verified",
+    verdict: "Names its source",
+    verdictPlural: "name their source",
     color: "#2e6027",
     bg: "#e0f0d8",
-    description: "Publicly states Japanese origin, prefecture, or direct sourcing.",
+    description: "Names a specific Japanese region, farm or supplier, on a page we link to.",
     headerBg: "#2e6027",
     headerText: "#ffffff",
     headerPill: "rgba(255,255,255,0.2)",
   },
   B: {
-    label: "Japanese Matcha Mentioned",
-    shortLabel: "Mentioned",
+    verdict: "Says “Japanese” only",
+    verdictPlural: "say “Japanese” only",
     color: "#3a7a30",
     bg: "#d4edcc",
-    description: "References Japanese matcha but no sourcing specifics.",
+    description: "Says the matcha is Japanese, but not which region, farm or supplier.",
     headerBg: "#6eb35c",
     headerText: "#14210f",
     headerPill: "rgba(20,33,15,0.14)",
   },
   C: {
-    label: "No Origin Disclosure",
-    shortLabel: "No Disclosure",
+    verdict: "Says nothing about origin",
+    verdictPlural: "say nothing about origin",
     color: "#6b7280",
     bg: "#f3f4f6",
-    description: "Serves matcha with no public origin information.",
+    description: "We read the page. It gives no origin at all.",
     headerBg: "#4b5563",
     headerText: "#ffffff",
     headerPill: "rgba(255,255,255,0.2)",
   },
   D: {
-    label: "Insufficient Information",
-    shortLabel: "Unknown",
+    verdict: "Has no readable page",
+    verdictPlural: "have no readable page",
     color: "#9ca3af",
     bg: "#fafafa",
-    description: "Could not verify enough information to classify.",
+    description: "No page we could open. Not counted as silent.",
     headerBg: "#e5e7eb",
     headerText: "#111827",
     headerPill: "rgba(17,24,39,0.08)",

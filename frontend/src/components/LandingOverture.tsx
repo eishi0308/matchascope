@@ -145,13 +145,13 @@ function Findings({ stats }: { stats: Props["stats"] }) {
   const HATCH = "repeating-linear-gradient(135deg, rgba(28,43,26,0.34) 0 1.5px, transparent 1.5px 4px)";
 
   const figures = [
-    { key: "A", n: verified,  label: "name the source",     fill: levelConfig.A.headerBg, ink: levelConfig.A.headerBg },
-    { key: "B", n: japanOnly, label: "say “Japanese”", fill: levelConfig.B.headerBg, ink: undefined },
+    { key: "A", n: verified,  label: levelConfig.A.verdictPlural, fill: levelConfig.A.headerBg, ink: levelConfig.A.headerBg },
+    { key: "B", n: japanOnly, label: levelConfig.B.verdictPlural, fill: levelConfig.B.headerBg, ink: undefined },
     // The same de-emphasis grey the breakdown bar gives this class further down.
-    { key: "C", n: silent,    label: "say nothing",         fill: "var(--text-muted)",    ink: undefined },
+    { key: "C", n: silent,    label: levelConfig.C.verdictPlural, fill: "var(--text-muted)",    ink: undefined },
     // Muted, but gray-500 rather than gray-400: at this size the numeral still has to
     // clear 3:1 against the page.
-    { key: "D", n: unread,    label: "have no readable page", fill: HATCH,                  ink: "#6b7280" },
+    { key: "D", n: unread,    label: levelConfig.D.verdictPlural, fill: HATCH,                  ink: "#6b7280" },
   ];
 
   return (

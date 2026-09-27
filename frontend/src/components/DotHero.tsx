@@ -19,6 +19,7 @@ import { useRouter } from "next/navigation";
 import { fetchCafePoints, type CafePoint } from "@/lib/api";
 import { cafeUrl } from "@/lib/slug";
 import coverage from "@/lib/crawl-coverage.json";
+import { levelConfig } from "@/data/cafes";
 
 type Level = "A" | "B" | "C" | "D";
 type CityKey = "Sydney" | "Melbourne";
@@ -79,12 +80,10 @@ export default function DotHero() {
         </header>
 
         <div className="dh-legend dh-intro-late" data-dh="legend" aria-hidden="true">
-          <span><i style={{ background: "#2e6027" }} />Names the source</span>
-          <span><i style={{ background: "#6eb35c" }} />Says “Japanese”</span>
-          {/* Level C and D by the map page's own names: "say nothing" below counts cafes
-              whose pages we could read (328), a different number from level C (491). */}
-          <span><i style={{ background: "#b8b4a8" }} />No disclosure</span>
-          <span><i style={{ background: "#e0ddd3" }} />Unknown</span>
+          <span><i style={{ background: "#2e6027" }} />{levelConfig.A.verdict}</span>
+          <span><i style={{ background: "#6eb35c" }} />{levelConfig.B.verdict}</span>
+          <span><i style={{ background: "#b8b4a8" }} />{levelConfig.C.verdict}</span>
+          <span><i style={{ background: "#e0ddd3" }} />{levelConfig.D.verdict}</span>
           <span className="dh-hint" data-dh="hint">Hover any dot</span>
         </div>
 
@@ -124,10 +123,10 @@ interface Panel { x: number; y: number; w: number; h: number; X: (lo: number) =>
 interface Frame { la: [number, number]; lo: [number, number] }
 
 const LEVEL: Record<Level, { color: string; chip: string; bg: string; ink: string; text: string }> = {
-  A: { color: "#2e6027", chip: "Names the source", bg: "#e6f1e1", ink: "#2e6027", text: "Names where its matcha comes from on its own site." },
-  B: { color: "#6eb35c", chip: "Says “Japanese”", bg: "#eef6e9", ink: "#3a7a30", text: "Mentions Japanese matcha, but gives no sourcing specifics." },
-  C: { color: "#b8b4a8", chip: "No disclosure", bg: "#f2f0ea", ink: "#57534e", text: "Serves matcha with no public information about where it’s from." },
-  D: { color: "#e0ddd3", chip: "Unknown", bg: "#f4f3ee", ink: "#6b7280", text: "Not enough public information to classify." },
+  A: { color: "#2e6027", chip: levelConfig.A.verdict, bg: "#e6f1e1", ink: "#2e6027", text: levelConfig.A.description },
+  B: { color: "#6eb35c", chip: levelConfig.B.verdict, bg: "#eef6e9", ink: "#3a7a30", text: levelConfig.B.description },
+  C: { color: "#b8b4a8", chip: levelConfig.C.verdict, bg: "#f2f0ea", ink: "#57534e", text: levelConfig.C.description },
+  D: { color: "#e0ddd3", chip: levelConfig.D.verdict, bg: "#f4f3ee", ink: "#6b7280", text: levelConfig.D.description },
 };
 const RANK: Record<Level, number> = { A: 0, B: 1, C: 2, D: 3 };
 const CITIES: CityKey[] = ["Sydney", "Melbourne"];

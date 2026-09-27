@@ -81,7 +81,7 @@ export default async function Image({ params }: { params: { slug: string } }) {
               textTransform: "uppercase",
             }}
           >
-            Level {cafe.level} — {level.shortLabel}
+            Level {cafe.level} — {level.verdict}
           </div>
 
           <div

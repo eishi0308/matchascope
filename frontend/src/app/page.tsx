@@ -90,10 +90,10 @@ const HATCH = { angle: 45, period: 5.5, weight: 1.9, ink: "rgba(28,43,26,0.34)" 
 const DISCLOSURE_ROWS = [
   // Transparent because nothing is painted behind the hatch — both the arc and the
   // swatch draw stripes straight onto the card, so this row has no flat colour of its own.
-  { key: "unchecked" as const, label: "No page we could read",     color: "transparent" },
-  { key: "nothing" as const,   label: "No origin mentioned",       color: "var(--text-muted)" },
-  { key: "japanOnly" as const, label: "“Japanese matcha” only",    color: "#6eb35c" },
-  { key: "named" as const,     label: "Named source, with a link", color: "#2e6027" },
+  { key: "unchecked" as const, label: levelConfig.D.verdictPlural, color: "transparent" },
+  { key: "nothing" as const,   label: levelConfig.C.verdictPlural, color: "var(--text-muted)" },
+  { key: "japanOnly" as const, label: levelConfig.B.verdictPlural, color: "#6eb35c" },
+  { key: "named" as const,     label: levelConfig.A.verdictPlural, color: "#2e6027" },
 ];
 
 // Colour fields come from levelConfig's header* values — the same pair the cafe detail
@@ -107,10 +107,10 @@ const DISCLOSURE_ROWS = [
 // field: it used to equal `bg` for the same reason and made B and D's outer border and
 // internal divider both invisible. The render derives those from a generic overlay instead.
 const LEVEL_CARDS = [
-  { level: "A", title: "Verified Japanese Disclosure", desc: "Names a specific Japanese region, farm or supplier, and links to proof.", accent: levelConfig.A.headerBg,   bg: levelConfig.A.headerBg, onDark: levelConfig.A.headerText === "#ffffff" },
-  { level: "B", title: "Japanese Matcha Mentioned",    desc: "Says the matcha is Japanese, but not which region, farm or supplier.",    accent: levelConfig.B.headerText, bg: levelConfig.B.headerBg, onDark: levelConfig.B.headerText === "#ffffff" },
-  { level: "C", title: "No Origin Disclosure",         desc: "Serves matcha, but says nothing about where it's from.",         accent: levelConfig.C.headerBg,   bg: levelConfig.C.headerBg, onDark: levelConfig.C.headerText === "#ffffff" },
-  { level: "D", title: "Insufficient Information",     desc: "Could not verify enough information across website, menu, or social media.",        accent: levelConfig.D.headerText, bg: levelConfig.D.headerBg, onDark: levelConfig.D.headerText === "#ffffff" },
+  { level: "A", title: levelConfig.A.verdict, desc: levelConfig.A.description, accent: levelConfig.A.headerBg,   bg: levelConfig.A.headerBg, onDark: levelConfig.A.headerText === "#ffffff" },
+  { level: "B", title: levelConfig.B.verdict, desc: levelConfig.B.description, accent: levelConfig.B.headerText, bg: levelConfig.B.headerBg, onDark: levelConfig.B.headerText === "#ffffff" },
+  { level: "C", title: levelConfig.C.verdict, desc: levelConfig.C.description, accent: levelConfig.C.headerBg,   bg: levelConfig.C.headerBg, onDark: levelConfig.C.headerText === "#ffffff" },
+  { level: "D", title: levelConfig.D.verdict, desc: levelConfig.D.description, accent: levelConfig.D.headerText, bg: levelConfig.D.headerBg, onDark: levelConfig.D.headerText === "#ffffff" },
 ];
 
 

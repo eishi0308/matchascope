@@ -109,7 +109,7 @@ export default function LevelFilter({ selected, onChange, counts, total }: Props
   const summary = selected.length === 0
     ? "All Levels"
     : selected.length === 1
-      ? `${selected[0]} — ${levelConfig[selected[0]].shortLabel}`
+      ? `${selected[0]} — ${levelConfig[selected[0]].verdict}`
       : `${selected.length} Levels`;
 
   const row = (
@@ -299,7 +299,7 @@ export default function LevelFilter({ selected, onChange, counts, total }: Props
                     >
                       {lvl}
                     </span>,
-                    cfg.shortLabel,
+                    cfg.verdict,
                     BLURB[lvl],
                     counts[lvl] ?? 0,
                     cfg.color,
