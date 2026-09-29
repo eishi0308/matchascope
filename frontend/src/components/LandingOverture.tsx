@@ -25,6 +25,7 @@ import { ArrowRight, MapPin, Quote, ExternalLink } from "lucide-react";
 import ChapterMark, { Kicker } from "@/components/ChapterMark";
 import { Cafe, levelConfig } from "@/data/cafes";
 import { externalUrl } from "@/lib/links";
+import { splitOrigins } from "@/lib/origins";
 // Fallback figures for the first paint, before the live stats arrive. This block
 // renders on the server, so it is what a crawler and a reader without JavaScript
 // see; hard-coding it meant the front page quoted 96 / 18 / 414 long after the
@@ -386,6 +387,47 @@ function DisclosureStat({ stats }: { stats: Props["stats"] }) {
   );
 }
 
+/**
+ * A quote with its origin names marked — the words that earned the cafe its A.
+ * The mark is a highlighter stroke across the lower part of the line, drawn left
+ * to right once the card is on screen, so the eye goes from "Proof, not
+ * adjectives" straight to the proof. The name also sets upright and heavier
+ * than the italic around it: a place name is a fact, not part of the voice.
+ * It is a background image, not a positioned bar, so it follows a name that
+ * wraps, and box-decoration-break gives each line its own stroke.
+ */
+function OriginQuote({ quote }: { quote: string }) {
+  const reduce = useReducedMotion();
+  return (
+    <>
+      {splitOrigins(quote).map((part, i) =>
+        part.origin ? (
+          <motion.mark
+            key={i}
+            className="not-italic font-semibold text-matcha-900 rounded-[3px] px-[3px] -mx-[1px]"
+            style={{
+              backgroundColor: "transparent",
+              backgroundImage: "linear-gradient(100deg, rgba(125,213,111,0.55), rgba(151,204,134,0.40))",
+              backgroundRepeat: "no-repeat",
+              backgroundPosition: "0 100%",
+              WebkitBoxDecorationBreak: "clone",
+              boxDecorationBreak: "clone",
+            }}
+            initial={{ backgroundSize: reduce ? "100% 55%" : "0% 55%" }}
+            whileInView={{ backgroundSize: "100% 55%" }}
+            viewport={{ once: true, margin: "-40px" }}
+            transition={{ duration: reduce ? 0 : 0.8, delay: reduce ? 0 : 0.35 + i * 0.06, ease: [0.16, 1, 0.3, 1] }}
+          >
+            {part.text}
+          </motion.mark>
+        ) : (
+          part.text
+        ),
+      )}
+    </>
+  );
+}
+
 /** Featured listings — the pattern's "inventory" beat. */
 function FeaturedCafes({ verified }: { verified: Cafe[] }) {
   const picks = useMemo(
@@ -443,7 +485,7 @@ function FeaturedCafes({ verified }: { verified: Cafe[] }) {
                 <Quote size={16} className="text-matcha-400 mb-2" />
                 {/* clamped so one long quote can't set the height of the whole row */}
                 <p className="text-[16px] text-gray-700 italic leading-relaxed flex-1 line-clamp-5">
-                  &ldquo;{c.evidence!.quote}&rdquo;
+                  &ldquo;<OriginQuote quote={c.evidence!.quote} />&rdquo;
                 </p>
                 <div className="mt-4 pt-4" style={{ borderTop: "1px solid #f0f0f0" }}>
                   {externalUrl(c.evidence!.source) ? (
