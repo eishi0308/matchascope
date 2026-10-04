@@ -476,18 +476,6 @@ function MenuEvidenceCard() {
       >
         Not one of them says where the matcha came from.
       </motion.p>
-
-      <motion.p
-        className="text-[14px] mt-4 leading-relaxed"
-        style={{ color: "rgba(255,255,255,0.42)" }}
-        initial={{ opacity: 0 }}
-        animate={inView ? { opacity: 1 } : {}}
-        transition={{ duration: 0.6, delay: 0.85 }}
-      >
-        Quoted from each cafe&rsquo;s own page, read 25 August 2026. Prices in AUD.
-        None of these fifteen pages mentions Japan, a region, a farm, a supplier
-        or a grade.
-      </motion.p>
     </div>
   );
 }
